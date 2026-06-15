@@ -1,0 +1,26 @@
+# Conversaciones reales — NUNCA se suben al repo.
+# Cada usuario respalda las suyas localmente.
+markdown-*/
+consolidado/
+cowork-collected/
+respaldos-crudos/
+recuperado-*/
+instrucciones-extraidas/
+.sync-state/
+.sync-tmp/
+
+# Datos crudos de las herramientas de origen
+*.jsonl
+*.db
+*.vscdb
+*.pb
+
+# Metadata / estado generado
+_backup-info.json
+build-log-progreso.json
+
+# Python
+__pycache__/
+
+# macOS
+.DS_Store
