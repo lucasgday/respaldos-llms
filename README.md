@@ -168,6 +168,35 @@ conversaciones nuevas aportó cada fuente.
 
 ---
 
+## Contribuir
+
+**Las sugerencias y aportes son bienvenidos** — sobre todo para **soportar más
+herramientas de IA-coding**. Si la que usás guarda sus sesiones en disco y no
+está en la lista, abrí un *issue* o mandá un *pull request*.
+
+Sumar una fuente nueva es acotado: alcanza con un conversor que lea ese origen y
+escriba el mismo Markdown estándar que usan los demás —
+
+```
+# <título>
+
+<!-- fecha: <ISO> | id: <id> | proyecto: <proyecto> | fuente: <fuente> | archivada: <true|false> -->
+
+### Tú
+
+…
+
+### <Asistente>
+
+…
+```
+
+Una vez que el conversor produce ese formato, el visor y el resto del flujo lo
+toman sin cambios. Fijate en cualquiera de los `convert_*.py` como referencia.
+También son bienvenidos reportes de bugs, mejoras al visor e ideas en general.
+
+---
+
 ## Notas
 
 - **macOS-only por ahora.** Usa `launchd` y rutas propias de macOS para ubicar
