@@ -18,8 +18,10 @@ cd "$BASE" || { echo "No pude entrar a $BASE"; exit 1; }
 STATE="$BASE/.sync-state"          # índice de tamaños procesados (incremental)
 mkdir -p "$STATE"
 TMP="$BASE/.sync-tmp"
-PY_CLAUDE="$BASE/convert_claude.py"
-PY_CODEX="$BASE/convert_codex.py"
+# Los conversores viven junto a este script (SCRIPT_DIR), no en la carpeta de
+# datos: así el código y los markdowns pueden estar en carpetas distintas.
+PY_CLAUDE="$SCRIPT_DIR/convert_claude.py"
+PY_CODEX="$SCRIPT_DIR/convert_codex.py"
 
 HOME_CLAUDE="$HOME/.claude"
 HOME_CODEX="$HOME/.codex"
@@ -185,7 +187,7 @@ echo ""
 # Se reconvierte completo cuando la base cambió de tamaño (incremental a nivel base).
 # ---------------------------------------------------------------------------
 OPENCODE_DB="$HOME/.local/share/opencode/opencode.db"
-PY_OPENCODE="$BASE/convert_opencode.py"
+PY_OPENCODE="$SCRIPT_DIR/convert_opencode.py"
 if [ -f "$OPENCODE_DB" ] && [ -f "$PY_OPENCODE" ]; then
   echo "-- OpenCode --"
   if need_process "$OPENCODE_DB"; then
@@ -206,7 +208,7 @@ echo ""
 # El global tiene las conversaciones; se reconvierte si la base cambió de tamaño.
 # ---------------------------------------------------------------------------
 CURSOR_DB="$HOME/Library/Application Support/Cursor/User/globalStorage/state.vscdb"
-PY_CURSOR="$BASE/convert_cursor.py"
+PY_CURSOR="$SCRIPT_DIR/convert_cursor.py"
 if [ -f "$CURSOR_DB" ] && [ -f "$PY_CURSOR" ]; then
   echo "-- Cursor --"
   if need_process "$CURSOR_DB"; then
