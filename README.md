@@ -165,6 +165,13 @@ You can also **double-click** `update-backup.command`.
 Double-click `install-auto.command`. It installs a `launchd` task that runs the
 backup every day at noon (or when the Mac wakes up if it was asleep).
 
+Prefer a different time? Run it from the terminal with an hour (24h):
+
+```bash
+./install-auto.command 22       # every day at 22:00
+./install-auto.command 7:30     # every day at 07:30
+```
+
 To remove it: double-click `uninstall-auto.command`.
 
 ---

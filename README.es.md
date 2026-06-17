@@ -169,6 +169,13 @@ También podés hacer **doble clic** en `update-backup.command`.
 Doble clic en `install-auto.command`. Instala una tarea de `launchd` que corre el
 respaldo todos los días al mediodía (o al despertar la Mac si estaba dormida).
 
+¿Preferís otro horario? Correlo desde la terminal con una hora (24h):
+
+```bash
+./install-auto.command 22       # todos los días a las 22:00
+./install-auto.command 7:30     # todos los días a las 07:30
+```
+
 Para quitarla: doble clic en `uninstall-auto.command`.
 
 ---
