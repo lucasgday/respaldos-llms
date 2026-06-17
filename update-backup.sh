@@ -95,7 +95,7 @@ HOME_CLAUDE="$HOME/.claude"
 HOME_CODEX="$HOME/.codex"
 COWORK_DIR="$HOME/Library/Application Support/Claude/local-agent-mode-sessions"
 
-echo "== LLM backup =="
+echo "== agentlog backup =="
 echo "Base: $BASE"
 [ "$DRY" = "1" ] && echo "(dry-run: nothing will be written)"
 [ -n "$ONLY" ] && echo "(only: $ONLY)"
@@ -337,6 +337,10 @@ echo "  TOTAL: $TOTAL"
 # write this run into log.json (cumulative run history)
 LOG="$BASE/.sync-state/log.json"
 mkdir -p "$BASE/.sync-state"
+# net new conversations vs the previous run (read BEFORE prepending the new entry)
+PREV=$(python3 -c "import json,os,sys; p=sys.argv[1]; h=json.load(open(p)) if os.path.exists(p) else []; print(h[0].get('total',0) if h else 0)" "$LOG" 2>/dev/null || echo 0)
+NEW=$((TOTAL - PREV)); [ "$NEW" -lt 0 ] && NEW=0
+echo "  NEW: $NEW"
 DATE=$(date +"%Y-%m-%dT%H:%M:%S%z")
 ENTRY=$(printf '{"date":"%s","total":%d,%s}' "$DATE" "$TOTAL" "$(IFS=,; echo "${SUMMARY[*]}")")
 # prepend the new entry to the history (keep last 50)
@@ -356,7 +360,8 @@ PYEOF
 
 # macOS notification (only if osascript exists, i.e. on a Mac)
 if command -v osascript >/dev/null 2>&1; then
-  osascript -e "display notification \"Total: $TOTAL conversations backed up\" with title \"LLM backup\" sound name \"\"" >/dev/null 2>&1 || true
+  if [ "$NEW" -gt 0 ]; then BODY="+$NEW new · $TOTAL total conversations"; else BODY="$TOTAL conversations · no new"; fi
+  osascript -e "display notification \"$BODY\" with title \"agentlog\" subtitle \"Backup updated\" sound name \"\"" >/dev/null 2>&1 || true
 fi
 
 echo ""
