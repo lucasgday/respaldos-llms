@@ -33,7 +33,7 @@
   .analytics{flex:1;overflow-y:auto;padding:24px 28px;background:var(--paper)}
   .an-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
   .an-head h2{margin:0;font-size:20px;color:var(--ink)}
-  .an-grid{display:flex;flex-direction:column;gap:24px;max-width:920px}
+  .an-grid{display:flex;flex-direction:column;gap:24px;max-width:920px;margin:0 auto}
   .an-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 20px}
   .an-card h3{margin:0 0 14px;font-size:14px;color:var(--ink);font-weight:700}
   .an-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
@@ -64,7 +64,8 @@
   .an-stat .lbl{font-size:11px;color:var(--ink-soft);margin-top:4px}
   .lg-sub{margin:-6px 0 14px;font-size:12px;color:var(--ink-soft)}
   .lg-range{font-weight:500;font-size:11.5px;color:var(--ink-soft);margin-left:6px}
-  .lg-grid .an-stat{min-width:92px}
+  .lg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:14px}
+  .lg-grid .an-stat{min-width:0}
   .lg-bars{display:flex;flex-direction:column;gap:8px;margin-top:14px}
   .lg-bar-row{display:flex;align-items:center;gap:10px;font-size:12px}
   .lg-bar-row[data-tip]{cursor:help}
@@ -246,6 +247,7 @@
     .menu-toggle{display:inline-flex !important}
   }
   .menu-toggle{display:none}
+  .icon-btn{font-size:15px;line-height:1;padding-left:9px;padding-right:9px}
   @media (prefers-reduced-motion:reduce){*{transition:none !important}}
 </style>
 </head>
@@ -262,8 +264,8 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#cfe0dc" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
       <input id="search" type="search" placeholder="Search…" autocomplete="off">
     </div>
-    <button class="btn ghost sm" id="exportBtn">Save progress</button>
-    <button class="btn ghost sm" id="importBtn">Load</button>
+    <button class="btn ghost sm icon-btn" id="exportBtn" aria-label="Export progress">⤓</button>
+    <button class="btn ghost sm icon-btn" id="importBtn" aria-label="Import">⤒</button>
     <input id="importFile" type="file" accept="application/json" hidden>
     <button class="btn" id="openBtn">Open folder</button>
     <input id="folder" type="file" webkitdirectory directory multiple hidden>
@@ -434,7 +436,10 @@ function applyStaticI18n(){
   set("lbl-view",t("view"));
   set("lbl-hide-done",t("hide_done")); set("lbl-hide-archived",t("hide_archived")); set("lbl-collapse-turns",t("collapse_turns"));
   set("lbl-group-by",t("group_by")); set("gtSource",t("by_tool")); set("gtProject",t("by_project"));
-  set("exportBtn",t("save_progress")); set("importBtn",t("load")); set("openBtn",t("open_folder"));
+  set("openBtn",t("open_folder"));
+  // Export/Import are compact icon buttons → their label lives in the tooltip.
+  const setTitle=(id,v)=>{ const el=document.getElementById(id); if(el) el.title=v; };
+  setTitle("exportBtn",t("save_progress")); setTitle("importBtn",t("load"));
   set("btnAnalytics",t("analytics")); set("btnLog",t("runs"));
   const s=document.getElementById("search"); if(s) s.placeholder=t("search");
   set("lbl-runs-title",t("runs_title"));
@@ -755,8 +760,8 @@ function renderAnalytics(){
   grid.appendChild(cardOverview(sesiones, state.ledger));
   // 2) Activity patterns — the metric toggle leads the charts it controls.
   grid.appendChild(mc);
-  grid.appendChild(cardStackedArea(sesiones));
   grid.appendChild(cardHeatmap(sesiones));
+  grid.appendChild(cardStackedArea(sesiones));
   grid.appendChild(cardTopProjects(sesiones));
   // 3) Detail — granular metrics, token spend, tool usage.
   if(state.ledger){
@@ -942,7 +947,7 @@ function cardDetailMetrics(lg){
     [T.test_runs,t("lg_tests")],[T.build_runs,t("lg_builds")],
     [T.errors,t("lg_errors")],[T.mcp_tool_calls,t("lg_mcp")],
   ];
-  const cont=document.createElement("div"); cont.className="an-summary lg-grid";
+  const cont=document.createElement("div"); cont.className="lg-grid";
   cont.innerHTML=stats.map(([n,l])=>`<div class="an-stat"><div class="num">${n}</div><div class="lbl">${l}</div></div>`).join("");
   card.appendChild(cont);
   return card;
@@ -999,15 +1004,17 @@ function cardOverview(sesiones, lg){
     range=`<span class="lg-range">${escapeHtml(formatDate(lg.first_activity.slice(0,10),false))} → ${escapeHtml(formatDate(lg.last_activity.slice(0,10),false))}</span>`;
   }
   card.innerHTML=`<h3>${t("overview_title")} ${range}</h3><p class="lg-sub">${t("ledger_sub")}</p>`;
+  // General → detail: projects first, then sources, then conversation states
+  // (active/archived imply the total, so the redundant total tile is dropped).
   const stats=[
-    [total,t("n_conversations")],[proyectos,t("n_projects")],
-    [fuentes,t("n_sources")],[total-arch,t("n_active")],[arch,t("n_archived")],
+    [proyectos,t("n_projects")],[fuentes,t("n_sources")],
+    [total-arch,t("n_active")],[arch,t("n_archived")],
   ];
   if(lg){
     const T=lg.totals;
     stats.push([T.user_messages,t("lg_prompts")],[fmtNum(T.tool_calls),t("lg_tool_calls")],[T.files_modified,t("lg_files")]);
   }
-  const cont=document.createElement("div"); cont.className="an-summary lg-grid";
+  const cont=document.createElement("div"); cont.className="lg-grid";
   cont.innerHTML=stats.map(([n,l])=>`<div class="an-stat"><div class="num">${n}</div><div class="lbl">${l}</div></div>`).join("");
   card.appendChild(cont);
   return card;

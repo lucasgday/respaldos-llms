@@ -36,7 +36,7 @@ except Exception:
         parts = [p for p in folder.split("-") if p]
         return parts[-1] if parts else folder
 
-CACHE_VERSION = 2
+CACHE_VERSION = 3
 
 TEST_RE = re.compile(
     r"\b(pytest|jest|vitest|go test|cargo test|npm (?:run )?test|"
@@ -53,6 +53,7 @@ WEB_TOOLS = {"websearch", "webfetch", "web_search", "web_fetch", "webfetchtool"}
 
 def new_session(project):
     return {
+        "id": None,
         "project": project or "(no project)", "sessions": 1,
         "user_messages": 0, "assistant_messages": 0,
         "tool_calls": 0, "mcp_tool_calls": 0,
@@ -121,6 +122,7 @@ def record_tool(s, name, cmd=None, fpath=None):
 # --------------------------------------------------------------------------
 def scan_claude(path, plabel):
     s = new_session(plabel)
+    s["id"] = os.path.splitext(os.path.basename(path))[0]  # uuid == the .md's id
     for line in open(path, errors="ignore"):
         line = line.strip()
         if not line:
@@ -224,6 +226,8 @@ def scan_codex(path, _plabel=None):
             cwd = p.get("cwd")
             if cwd:
                 s["project"] = os.path.basename(cwd.rstrip("/")) or s["project"]
+            if p.get("id"):
+                s["id"] = p.get("id")  # matches the .md's id
             bump_time(s, p.get("timestamp"))
         if isinstance(p, dict) and p.get("model"):
             model = p.get("model")
@@ -293,6 +297,7 @@ def scan_opencode_db(db_path):
         sid = row["id"]
         proj = os.path.basename((row["directory"] or "").rstrip("/")) or "(no project)"
         s = new_session(proj)
+        s["id"] = str(sid)
         s["_key"] = "opencode\t" + str(sid)
         bump_time(s, epoch_to_iso(row["time_created"]))
         try:
@@ -386,6 +391,7 @@ def scan_cursor_db(db_path):
     con.close()
     for cid, bubs in bubbles.items():
         s = new_session("cursor")
+        s["id"] = str(cid)
         s["_key"] = "cursor\t" + str(cid)
         bump_time(s, epoch_to_iso(meta.get(cid)))
         for b in bubs:
@@ -403,6 +409,89 @@ def scan_cursor_db(db_path):
                             fpath=args.get("path") or args.get("filePath"))
         out.append(finish_session(s))
     return out
+
+
+# --------------------------------------------------------------------------
+# Markdown fallback (any source) — covers sessions whose raw was pruned but
+# whose cumulative .md backup survives. Counts only: tokens/model live in raw.
+# --------------------------------------------------------------------------
+MD_USER_RE = re.compile(r"^###\s+(?:You|Tú)\s*$", re.M)
+MD_ASSIST_RE = re.compile(r"^###\s+(?:Claude|Codex|Cursor|OpenCode)\s*$", re.M)
+MD_TOOL_RE = re.compile(r"\[(?:tool|herramienta):\s*([^\]\n→]+?)(?:\s*→\s*([^\]\n]*))?\]")
+MD_BASH_RE = re.compile(r"```bash\n(.*?)\n```", re.S)
+
+
+def scan_markdown(path):
+    try:
+        txt = open(path, errors="ignore").read()
+    except Exception:
+        return None
+    s = new_session(None)
+    cm = re.search(r"<!--(.*?)-->", txt, re.S)
+    meta = cm.group(1) if cm else ""
+    mid = re.search(r"id:\s*([^|>\s]+)", meta)
+    s["id"] = mid.group(1).strip() if mid else None
+    md = re.search(r"(?:date|fecha):\s*([^|]+)", meta)
+    if md:
+        bump_time(s, md.group(1).strip())
+    mp = re.search(r"(?:project|proyecto):\s*([^|]+)", meta)
+    if mp:
+        s["project"] = mp.group(1).strip() or s["project"]
+    s["user_messages"] = len(MD_USER_RE.findall(txt))
+    s["assistant_messages"] = len(MD_ASSIST_RE.findall(txt))
+    for tm in MD_TOOL_RE.finditer(txt):
+        name = (tm.group(1) or "tool").strip().split()
+        name = name[0] if name else "tool"
+        target = (tm.group(2) or "").strip()
+        s["tool_calls"] += 1
+        s["tools"][name] = s["tools"].get(name, 0) + 1
+        low = name.lower()
+        if name.startswith("mcp__") or low.startswith("mcp_"):
+            s["mcp_tool_calls"] += 1
+        if low in WEB_TOOLS:
+            s["web_searches"] += 1
+        if low in EDIT_TOOLS and target:
+            s["_files"].add(target)
+        if target:  # cursor/opencode keep the shell command in the → target
+            if TEST_RE.search(target):
+                s["test_runs"] += 1
+            if BUILD_RE.search(target):
+                s["build_runs"] += 1
+    for bm in MD_BASH_RE.finditer(txt):  # claude/codex keep it in a bash block
+        cmd = bm.group(1)
+        if TEST_RE.search(cmd):
+            s["test_runs"] += 1
+        if BUILD_RE.search(cmd):
+            s["build_runs"] += 1
+    return finish_session(s)
+
+
+def collect_markdown(out_dir, raw_ids, old):
+    """Scan out_dir/*.md; add sessions whose id has no surviving raw."""
+    cache, sessions, hits, misses = {}, [], 0, 0
+    for root, _dirs, fnames in os.walk(out_dir):
+        for base in fnames:
+            if not base.endswith(".md"):
+                continue
+            f = os.path.join(root, base)
+            try:
+                st = os.stat(f); sig = "%d:%d" % (st.st_size, int(st.st_mtime))
+            except OSError:
+                continue
+            key = "md\t" + f
+            entry = old.get(key)
+            if entry and entry.get("sig") == sig and isinstance(entry.get("metrics"), dict):
+                metrics = entry["metrics"]; hits += 1
+            else:
+                metrics = scan_markdown(f)
+                if metrics is None:
+                    continue
+                misses += 1
+            cache[key] = {"sig": sig, "metrics": metrics}
+            if metrics.get("id") and metrics["id"] in raw_ids:
+                continue   # raw is richer — only fall back to the .md when raw is gone
+            sessions.append(metrics)
+    return cache, sessions, hits, misses
 
 
 # --------------------------------------------------------------------------
@@ -568,6 +657,14 @@ def main():
     else:
         new_cache, sessions, hits, misses = collect_db_source(input_path, fmt, old)
 
+    # Markdown fallback: the raw transcripts get pruned by the tools, but the .md
+    # backup is cumulative — cover those raw-less sessions from the Markdown
+    # (counts only; tokens/model only exist in the raw).
+    raw_ids = {m.get("id") for m in sessions if m.get("id")}
+    md_cache, md_sessions, md_hits, md_misses = collect_markdown(out_dir, raw_ids, old)
+    new_cache.update(md_cache)
+    sessions = sessions + md_sessions
+
     # Drop empty sessions (no messages, no tools) so the ledger's session count
     # matches what the Markdown converters emit (they skip empties too).
     sessions = [m for m in sessions
@@ -593,9 +690,10 @@ def main():
               open(cache_path, "w"), ensure_ascii=False)
 
     tt = ledger["totals"]
+    md_note = f", {len(md_sessions)} from .md (raw pruned)" if md_sessions else ""
     print(f"Ledger [{source}]: {tt['sessions']} sessions "
-          f"({hits} cached, {misses} scanned), {tt['tool_calls']} tool calls, "
-          f"{tt['files_modified']} files, "
+          f"({hits + md_hits} cached, {misses + md_misses} scanned{md_note}), "
+          f"{tt['tool_calls']} tool calls, {tt['files_modified']} files, "
           f"{ledger['tokens']['input'] + ledger['tokens']['output']:,} base tokens")
 
 
