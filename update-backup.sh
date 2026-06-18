@@ -128,6 +128,45 @@ need_process() {
   return 1     # unchanged, skip
 }
 
+# --- Loud health detection -------------------------------------------------
+# These tools store conversations in private, undocumented locations/formats.
+# When a vendor moves a folder or changes a format, the backup must not fail
+# silently — it should shout. Existing markdowns are never lost (cumulative);
+# the risk is NEW data quietly not being captured. HEALTH_WARN tallies issues.
+HEALTH_WARN=0
+
+# Run a converter; warn loudly if it errors, or — having been handed new/changed
+# raw data — converts 0 sessions (likely a changed path or storage format).
+# Usage: run_convert <label> <python args...>
+run_convert() {
+  local label="$1"; shift
+  local out conv rc
+  out=$(python3 "$@" 2>&1); rc=$?
+  printf '%s\n' "$out"
+  if [ "$rc" -ne 0 ]; then
+    echo "  !! $label: the converter errored (exit $rc) — its source format/path may have changed."
+    HEALTH_WARN=$((HEALTH_WARN+1)); return 0
+  fi
+  conv=$(printf '%s' "$out" | sed -n 's/.*Converted:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1)
+  if [ "${conv:-x}" = "0" ]; then
+    echo "  !! $label: had new/changed raw data but converted 0 sessions — the format may have changed."
+    HEALTH_WARN=$((HEALTH_WARN+1))
+  fi
+}
+
+# Source folder/db is gone but we have markdowns for it → the tool likely moved
+# its data. Usage: warn_missing <label> <markdown-dir>
+warn_missing() {
+  local label="$1" mddir="$2" n=0
+  [ -d "$mddir" ] && n=$(find "$mddir" -name '*.md' 2>/dev/null | wc -l | tr -d ' ')
+  if [ "${n:-0}" -gt 0 ]; then
+    echo "-- $label -- !! not found, but $n markdowns are on record — the tool may have moved its data."
+    HEALTH_WARN=$((HEALTH_WARN+1))
+  else
+    echo "-- $label -- (not found, skipped)"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # SOURCE 1: Claude Code  (~/.claude/projects/*/*.jsonl)
 # ---------------------------------------------------------------------------
@@ -149,7 +188,7 @@ if [ -d "$HOME_CLAUDE/projects" ]; then
   done < <(find "$HOME_CLAUDE/projects" -name "*.jsonl" -print0 2>/dev/null)
   if [ "$new" -gt 0 ]; then
     if [ "$DRY" = "1" ]; then echo "  $new new/changed sessions (dry-run, not converting)";
-    else echo "  $new new/changed sessions → converting"; python3 "$PY_CLAUDE" "$SRC" "$BASE/markdown-claude" claude-code "$HOME_CLAUDE/history.jsonl"; fi
+    else echo "  $new new/changed sessions → converting"; run_convert "Claude Code" "$PY_CLAUDE" "$SRC" "$BASE/markdown-claude" claude-code "$HOME_CLAUDE/history.jsonl"; fi
   else
     echo "  no changes"
   fi
@@ -162,7 +201,7 @@ if [ -d "$HOME_CLAUDE/projects" ]; then
     python3 "$PY_LEDGER" "$CLAUDE_RAW" "$BASE/markdown-claude" claude-code || true
   fi
 else
-  echo "-- Claude Code -- (not found, skipped)"
+  warn_missing "Claude Code" "$BASE/markdown-claude"
 fi
 echo ""
 fi
@@ -184,7 +223,7 @@ if [ -d "$HOME_CODEX/sessions" ] || [ -d "$HOME_CODEX/archived_sessions" ]; then
     done < <(find "$HOME_CODEX/sessions" -name "*.jsonl" -print0 2>/dev/null)
     if [ "$new" -gt 0 ]; then
       if [ "$DRY" = "1" ]; then echo "  $new new/changed active (dry-run, not converting)";
-      else echo "  $new new/changed active → converting"; python3 "$PY_CODEX" "$SRC" "$IDX" "$BASE/markdown-codex"; fi
+      else echo "  $new new/changed active → converting"; run_convert "Codex" "$PY_CODEX" "$SRC" "$IDX" "$BASE/markdown-codex"; fi
     else
       echo "  active: no changes"
     fi
@@ -264,7 +303,7 @@ PYEOF
     python3 "$PY_LEDGER" "$CODEX_RAW" "$BASE/markdown-codex" codex codex || true
   fi
 else
-  echo "-- Codex -- (not found, skipped)"
+  warn_missing "Codex" "$BASE/markdown-codex"
 fi
 echo ""
 fi
@@ -282,7 +321,7 @@ if [ -d "$COWORK_DIR" ]; then
   done < <(find "$COWORK_DIR" -path "*/.claude/projects/*.jsonl" ! -name "audit.jsonl" ! -path "*/subagents/*" -print0 2>/dev/null)
   if [ "$new" -gt 0 ]; then
     if [ "$DRY" = "1" ]; then echo "  $new new/changed sessions (dry-run, not converting)";
-    else echo "  $new new/changed sessions → converting"; python3 "$PY_CLAUDE" "$TMP/cowork" "$BASE/markdown-cowork" cowork "$HOME_CLAUDE/history.jsonl"; fi
+    else echo "  $new new/changed sessions → converting"; run_convert "Cowork" "$PY_CLAUDE" "$TMP/cowork" "$BASE/markdown-cowork" cowork "$HOME_CLAUDE/history.jsonl"; fi
   else
     echo "  no changes"
   fi
@@ -291,7 +330,7 @@ if [ -d "$COWORK_DIR" ]; then
     python3 "$PY_LEDGER" "$COWORK_DIR" "$BASE/markdown-cowork" cowork claude || true
   fi
 else
-  echo "-- Cowork -- (not found, skipped)"
+  warn_missing "Cowork" "$BASE/markdown-cowork"
 fi
 echo ""
 fi
@@ -307,7 +346,7 @@ if [ -f "$OPENCODE_DB" ] && [ -f "$PY_OPENCODE" ]; then
   echo "-- OpenCode --"
   if need_process "$OPENCODE_DB"; then
     if [ "$DRY" = "1" ]; then echo "  DB changed (dry-run, not converting)";
-    else echo "  DB changed → converting"; python3 "$PY_OPENCODE" "$OPENCODE_DB" "$BASE/markdown-opencode"; fi
+    else echo "  DB changed → converting"; run_convert "OpenCode" "$PY_OPENCODE" "$OPENCODE_DB" "$BASE/markdown-opencode"; fi
   else
     echo "  no changes"
   fi
@@ -318,7 +357,7 @@ if [ -f "$OPENCODE_DB" ] && [ -f "$PY_OPENCODE" ]; then
 elif [ ! -f "$PY_OPENCODE" ]; then
   echo "-- OpenCode -- (convert_opencode.py not found, skipped)"
 else
-  echo "-- OpenCode -- (not found, skipped)"
+  warn_missing "OpenCode" "$BASE/markdown-opencode"
 fi
 echo ""
 fi
@@ -338,7 +377,7 @@ if [ -f "$CURSOR_DB" ] && [ -f "$PY_CURSOR" ]; then
   echo "-- Cursor --"
   if need_process "$CURSOR_DB"; then
     if [ "$DRY" = "1" ]; then echo "  DB changed (dry-run, not converting)";
-    else echo "  DB changed → converting"; python3 "$PY_CURSOR" "$CURSOR_DB" "$BASE/markdown-cursor"; fi
+    else echo "  DB changed → converting"; run_convert "Cursor" "$PY_CURSOR" "$CURSOR_DB" "$BASE/markdown-cursor"; fi
   else
     echo "  no changes"
   fi
@@ -349,7 +388,7 @@ if [ -f "$CURSOR_DB" ] && [ -f "$PY_CURSOR" ]; then
 elif [ ! -f "$PY_CURSOR" ]; then
   echo "-- Cursor -- (convert_cursor.py not found, skipped)"
 else
-  echo "-- Cursor -- (not found, skipped)"
+  warn_missing "Cursor" "$BASE/markdown-cursor"
 fi
 echo ""
 fi
@@ -403,10 +442,19 @@ PYEOF
 
 # desktop notification (macOS osascript, or Linux notify-send if present)
 if [ "$NEW" -gt 0 ]; then BODY="+$NEW new · $TOTAL total conversations"; else BODY="$TOTAL conversations · no new"; fi
+if [ "$HEALTH_WARN" -gt 0 ]; then BODY="$BODY · WARNING: $HEALTH_WARN source(s) need attention"; fi
 if command -v osascript >/dev/null 2>&1; then
   osascript -e "display notification \"$BODY\" with title \"agentlog\" subtitle \"Backup updated\" sound name \"\"" >/dev/null 2>&1 || true
 elif command -v notify-send >/dev/null 2>&1; then
   notify-send "agentlog — backup updated" "$BODY" >/dev/null 2>&1 || true
+fi
+
+if [ "$HEALTH_WARN" -gt 0 ]; then
+  echo ""
+  echo "!! HEALTH: $HEALTH_WARN source(s) may have an issue (see the !! lines above)."
+  echo "   Your existing backups are intact (cumulative, never deleted), but NEW data"
+  echo "   from those tools may not be getting captured — a tool likely changed where"
+  echo "   or how it stores conversations. Check that source's path/format."
 fi
 
 echo ""

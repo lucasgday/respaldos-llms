@@ -25,6 +25,13 @@ OpenCode, Cowork). macOS and Linux (paths resolved per-OS; Cowork is macOS-only)
 
 - `update-backup.sh` — orchestrator / CLI entrypoint (`--help`, `--only`,
   `--dry-run`, optional `[OUTPUT_DIR]`). Reads each source, calls the converters.
+  **Loud health detection:** these tools store conversations in private, undocumented
+  locations/formats, so a vendor moving a folder or changing a format must never fail
+  silently. `run_convert` warns if a converter errors or — given new/changed raw —
+  converts 0 sessions; `warn_missing` warns when a source folder is gone but markdowns
+  exist for it. Warnings are tallied (`HEALTH_WARN`), summarized at the end, and added
+  to the desktop notification. Existing markdowns are never lost (rule #3); the risk it
+  guards is NEW data silently not being captured.
 - `converters/convert_*.py` — one per source (claude/codex/opencode/cursor; cowork
   reuses convert_claude). Each reads its origin and writes the standard Markdown.
 - `converters/extract_ledger.py` — **Evidence Ledger**: deterministic, $0, on-device
