@@ -1304,6 +1304,30 @@ setLang(detectLang());
       "tools": {"Bash":860,"Edit":640,"Read":520,"Write":130,"Grep":110,"TodoWrite":50},
       "projects": [{"project":"marketing-site","sessions":11,"tool_calls":1290,"files_modified":68,"user_messages":160},{"project":"todo-app","sessions":12,"tool_calls":1120,"files_modified":59,"user_messages":141}],
       "first_activity":"2026-03-20T11:02:00","last_activity":"2026-06-10T15:25:00"
+    },
+    "codex": {
+      "totals": {"sessions":14,"user_messages":188,"assistant_messages":3900,"tool_calls":4120,"mcp_tool_calls":0,"files_modified":0,"test_runs":22,"build_runs":18,"errors":61,"web_searches":3},
+      "tokens": {"input":640000,"output":5800000,"cache_creation":0,"cache_read":31000000},
+      "tokens_by_model": {"gpt-5.5":{"input":410000,"output":3900000,"cache_creation":0,"cache_read":20400000},"gpt-5.4-codex":{"input":230000,"output":1900000,"cache_creation":0,"cache_read":10600000}},
+      "tools": {"exec_command":3380,"write_stdin":420,"update_plan":190,"apply_patch":130},
+      "projects": [{"project":"data-pipeline","sessions":4,"tool_calls":1700,"files_modified":0,"user_messages":72},{"project":"cli-tool","sessions":7,"tool_calls":1640,"files_modified":0,"user_messages":83},{"project":"api-server","sessions":3,"tool_calls":780,"files_modified":0,"user_messages":33}],
+      "first_activity":"2026-04-03T16:25:00","last_activity":"2026-06-14T09:12:00"
+    },
+    "opencode": {
+      "totals": {"sessions":13,"user_messages":146,"assistant_messages":1820,"tool_calls":1560,"mcp_tool_calls":28,"files_modified":34,"test_runs":19,"build_runs":15,"errors":40,"web_searches":2},
+      "tokens": {"input":210000,"output":1180000,"cache_creation":3200000,"cache_read":88000000},
+      "tokens_by_model": {"qwen3.6-plus":{"input":140000,"output":760000,"cache_creation":2100000,"cache_read":57000000},"gpt-5.4":{"input":70000,"output":420000,"cache_creation":1100000,"cache_read":31000000}},
+      "tools": {"bash":620,"edit":410,"read":360,"write":90,"webfetch":28,"grep":52},
+      "projects": [{"project":"data-pipeline","sessions":8,"tool_calls":980,"files_modified":21,"user_messages":92},{"project":"ml-notebook","sessions":5,"tool_calls":580,"files_modified":13,"user_messages":54}],
+      "first_activity":"2026-04-03T20:11:00","last_activity":"2026-06-09T17:40:00"
+    },
+    "cursor": {
+      "totals": {"sessions":7,"user_messages":58,"assistant_messages":210,"tool_calls":190,"mcp_tool_calls":0,"files_modified":12,"test_runs":4,"build_runs":3,"errors":6,"web_searches":0},
+      "tokens": {"input":0,"output":0,"cache_creation":0,"cache_read":0},
+      "tokens_by_model": {},
+      "tools": {"edit_file":96,"read_file":70,"run_terminal":24},
+      "projects": [{"project":"portfolio-site","sessions":6,"tool_calls":150,"files_modified":9,"user_messages":48},{"project":"blog-astro","sessions":1,"tool_calls":40,"files_modified":3,"user_messages":10}],
+      "first_activity":"2026-05-02T10:30:00","last_activity":"2026-06-05T14:05:00"
     }
   }};
   const list = DEMO.files.map(f => mkFile(f.name, f.text));

@@ -253,6 +253,10 @@ if msg: print("  flag sync: "+", ".join(msg))
 PYEOF
     fi
   fi
+  # Evidence Ledger over the active Codex sessions (rollout-*.jsonl).
+  if [ "$DRY" != "1" ] && [ -d "$HOME_CODEX/sessions" ]; then
+    python3 "$PY_LEDGER" "$HOME_CODEX/sessions" "$BASE/markdown-codex" codex codex || true
+  fi
 else
   echo "-- Codex -- (not found, skipped)"
 fi
@@ -276,6 +280,10 @@ if [ -d "$COWORK_DIR" ]; then
   else
     echo "  no changes"
   fi
+  # Evidence Ledger (Cowork uses the Claude .jsonl format → 'claude' scanner).
+  if [ "$DRY" != "1" ]; then
+    python3 "$PY_LEDGER" "$COWORK_DIR" "$BASE/markdown-cowork" cowork claude || true
+  fi
 else
   echo "-- Cowork -- (not found, skipped)"
 fi
@@ -296,6 +304,10 @@ if [ -f "$OPENCODE_DB" ] && [ -f "$PY_OPENCODE" ]; then
     else echo "  DB changed → converting"; python3 "$PY_OPENCODE" "$OPENCODE_DB" "$BASE/markdown-opencode"; fi
   else
     echo "  no changes"
+  fi
+  # Evidence Ledger (OpenCode carries token usage + model per message).
+  if [ "$DRY" != "1" ]; then
+    python3 "$PY_LEDGER" "$OPENCODE_DB" "$BASE/markdown-opencode" opencode opencode || true
   fi
 elif [ ! -f "$PY_OPENCODE" ]; then
   echo "-- OpenCode -- (convert_opencode.py not found, skipped)"
@@ -323,6 +335,10 @@ if [ -f "$CURSOR_DB" ] && [ -f "$PY_CURSOR" ]; then
     else echo "  DB changed → converting"; python3 "$PY_CURSOR" "$CURSOR_DB" "$BASE/markdown-cursor"; fi
   else
     echo "  no changes"
+  fi
+  # Evidence Ledger (Cursor: counts only — its store carries no token usage).
+  if [ "$DRY" != "1" ]; then
+    python3 "$PY_LEDGER" "$CURSOR_DB" "$BASE/markdown-cursor" cursor cursor || true
   fi
 elif [ ! -f "$PY_CURSOR" ]; then
   echo "-- Cursor -- (convert_cursor.py not found, skipped)"

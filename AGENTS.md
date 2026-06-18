@@ -28,10 +28,14 @@ OpenCode, Cowork). macOS and Linux (paths resolved per-OS; Cowork is macOS-only)
 - `converters/convert_*.py` — one per source (claude/codex/opencode/cursor; cowork
   reuses convert_claude). Each reads its origin and writes the standard Markdown.
 - `converters/extract_ledger.py` — **Evidence Ledger**: deterministic, $0, on-device
-  metrics (token usage, tool/test/build counts, files modified, errors) parsed from
-  the raw `.jsonl`. Writes a `_ledger.json` sidecar the viewer reads. No LLM, no
-  network. Incremental: per-session metrics are cached in `_ledger-cache.json`
-  (validated by file size:mtime), so each run only re-scans changed sessions.
+  metrics (token usage by model, tool/test/build counts, files modified, errors)
+  read from each tool's RAW storage. One scanner per format (claude+cowork .jsonl,
+  codex rollouts, opencode/cursor SQLite); all emit the same per-session dict.
+  Cursor carries no tokens → counts only. Each source writes a per-source
+  `_ledger.json` (the viewer reads every one and aggregates). No LLM, no network.
+  Incremental: per-session metrics are cached in `_ledger-cache.json` (validated by
+  size:mtime) — file sources re-scan only changed sessions; DB sources re-scan only
+  when the DB changed. Called from each source's block in `update-backup.sh`.
 - `viewer.html` — standalone, bilingual (EN/ES) viewer. Pure reader. No build step.
 - `*.command` — double-click launchers (install/uninstall the launchd task; run).
 - `docs/` — `index.html` (the GitHub Pages live demo, sample data baked in),
