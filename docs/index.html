@@ -102,18 +102,23 @@
   .shell{display:grid;grid-template-columns:340px 1fr;min-height:0}
   .sidebar{background:linear-gradient(180deg,var(--spine),var(--spine-2));color:#DCE7E4;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid #0a201e}
   .side-nav{display:flex;gap:6px;padding:10px 12px 8px;border-bottom:1px solid #0a201e}
-  .side-link{flex:1;font:inherit;font-size:11.5px;cursor:pointer;padding:7px 8px;border-radius:7px;border:1px solid var(--line-strong);background:transparent;color:var(--ink-soft);white-space:nowrap;text-align:center}
-  .side-link:hover{background:#0c2422;color:#cfe0dc}
+  .side-link{flex:1;font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:7px 8px;border-radius:8px;border:1px solid #2c534f;background:#0c2422;color:#e7f0ee;white-space:nowrap;text-align:center;transition:.12s}
+  .side-link:hover{background:#12302c;color:#fff;border-color:#3a6b64}
   .side-link-lang{flex:0 0 auto}
   .side-search{display:block;padding:10px 12px;border-bottom:1px solid #0a201e}
   .side-search input{width:100%;max-width:none}
   .side-scroll{flex:1;overflow-y:auto;min-height:0}
   .side-foot{display:flex;gap:6px;padding:9px 12px;border-top:1px solid #0a201e}
-  .side-foot-btn{flex:1;font:inherit;font-size:11.5px;cursor:pointer;padding:7px 8px;border-radius:7px;border:1px solid var(--line-strong);background:transparent;color:var(--ink-soft);white-space:nowrap}
-  .side-foot-btn:hover{background:#0c2422;color:#cfe0dc}
+  .side-foot-btn{flex:1;font:inherit;font-size:11.5px;cursor:pointer;padding:7px 8px;border-radius:7px;border:1px solid #2c534f;background:transparent;color:#b9d0cb;white-space:nowrap;transition:.12s}
+  .side-foot-btn:hover{background:#0c2422;color:#fff;border-color:#3a6b64}
   .reader{overflow-y:auto;background:var(--paper)}
 
-  .filters{padding:16px 16px 8px;background:var(--spine);border-bottom:1px solid #0a201e}
+  .filters{padding:12px 16px 8px;background:var(--spine);border-bottom:1px solid #0a201e}
+  .filters-head{width:100%;display:flex;align-items:center;justify-content:space-between;background:transparent;border:none;color:#7FA39D;font:inherit;font-size:10px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;cursor:pointer;padding:2px 0}
+  .filters-head:hover{color:#cfe0dc}
+  .filters-head .ft-chev{font-size:10px;transition:transform .15s}
+  .filters.collapsed .ft-chev{transform:rotate(-90deg)}
+  .filters.collapsed .filters-body{display:none}
   .filters h3{margin:14px 0 8px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#7FA39D;font-weight:700}
   .filters h3:first-child{margin-top:0}
   .types{display:flex;gap:7px;flex-wrap:wrap}
@@ -295,7 +300,9 @@
         <input id="search" type="search" placeholder="Search…" autocomplete="off">
       </div>
       <div class="side-scroll">
-      <div class="filters">
+      <div class="filters" id="filters">
+        <button class="filters-head" id="filtersToggle"><span id="lbl-filters">Filters</span><span class="ft-chev">▾</span></button>
+        <div class="filters-body">
         <h3 id="lbl-show-blocks">Show blocks</h3>
         <div class="types" id="types">
           <span class="chip on" data-type="user"><span class="dot"></span><span id="lbl-chip-user">You</span></span>
@@ -310,6 +317,7 @@
           <span class="gt-label" id="lbl-group-by">Group by:</span>
           <button class="gt-btn" data-mode="source" id="gtSource">Tool</button>
           <button class="gt-btn active" data-mode="project" id="gtProject">Project</button>
+        </div>
         </div>
       </div>
       <nav class="projects" id="projects"></nav>
@@ -358,8 +366,8 @@ const I18N = {
     sub_default:"local viewer · 100% offline",
     last_backup:"last backup",
     save_progress:"Export progress", export_short:"Export", load:"Import", open_folder:"Open folder",
-    analytics:"📊 analytics", runs:"⟳ runs", search:"Search…",
-    show_blocks:"Show blocks", you:"You", assistant:"Assistant", tools:"Tools",
+    analytics:"📊 Analytics", runs:"⟳ Runs", search:"Search…",
+    filters:"Filters", show_blocks:"Show blocks", you:"You", assistant:"Assistant", tools:"Tools",
     view:"View", hide_done:"Hide marked conversations", hide_archived:"Hide archived",
     collapse_turns:"Collapse all turns", group_by:"Group by:", by_tool:"Tool", by_project:"Project",
     runs_title:"Latest backup runs", runs_empty:"No record yet. The backup writes here every time it runs.",
@@ -397,8 +405,8 @@ const I18N = {
     sub_default:"visor local · 100% offline",
     last_backup:"último respaldo",
     save_progress:"Exportar progreso", export_short:"Exportar", load:"Importar", open_folder:"Abrir carpeta",
-    analytics:"📊 analytics", runs:"⟳ corridas", search:"Buscar…",
-    show_blocks:"Mostrar bloques", you:"Tú", assistant:"Asistente", tools:"Herramientas",
+    analytics:"📊 Analytics", runs:"⟳ Corridas", search:"Buscar…",
+    filters:"Filtros", show_blocks:"Mostrar bloques", you:"Tú", assistant:"Asistente", tools:"Herramientas",
     view:"Vista", hide_done:"Ocultar conversaciones marcadas", hide_archived:"Ocultar archivadas",
     collapse_turns:"Colapsar todos los turnos", group_by:"Agrupar por:", by_tool:"Herramienta", by_project:"Proyecto",
     runs_title:"Últimas corridas del respaldo", runs_empty:"Sin registro todavía. El respaldo escribe acá cada vez que corre.",
@@ -452,7 +460,7 @@ function setLang(l){
 function applyStaticI18n(){
   document.title=t("doc_title");
   const set=(id,val,html)=>{ const el=document.getElementById(id); if(el){ if(html) el.innerHTML=val; else el.textContent=val; } };
-  set("lbl-show-blocks",t("show_blocks"));
+  set("lbl-filters",t("filters")); set("lbl-show-blocks",t("show_blocks"));
   set("lbl-chip-user",t("you")); set("lbl-chip-assistant",t("assistant")); set("lbl-chip-tool",t("tools"));
   set("lbl-view",t("view"));
   set("lbl-hide-done",t("hide_done")); set("lbl-hide-archived",t("hide_archived")); set("lbl-collapse-turns",t("collapse_turns"));
@@ -1337,6 +1345,14 @@ document.addEventListener("click",e=>{
 document.getElementById("hideArchived").addEventListener("change",e=>{ state.hideArchived=e.target.checked; renderSidebar(); });
 document.getElementById("collapseAll").addEventListener("change",e=>{ state.collapseAll=e.target.checked; if(state.activeId)openSession(state.activeId); });
 document.getElementById("menuToggle").addEventListener("click",()=>document.getElementById("sidebar").classList.toggle("open"));
+// Collapsible filters (remembered across sessions)
+(function(){
+  const KEY="buildlog_filters_collapsed";
+  const fEl=document.getElementById("filters"), fBtn=document.getElementById("filtersToggle");
+  if(!fEl||!fBtn) return;
+  try{ if(localStorage.getItem(KEY)==="1") fEl.classList.add("collapsed"); }catch(e){}
+  fBtn.addEventListener("click",()=>{ const c=fEl.classList.toggle("collapsed"); try{ localStorage.setItem(KEY, c?"1":"0"); }catch(e){} });
+})();
 
 document.getElementById("exportBtn").addEventListener("click",()=>{
   const blob=new Blob([JSON.stringify(state.progress,null,2)],{type:"application/json"});
