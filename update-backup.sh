@@ -91,6 +91,7 @@ TMP="$BASE/.sync-tmp"
 PY_CLAUDE="$SCRIPT_DIR/converters/convert_claude.py"
 PY_CODEX="$SCRIPT_DIR/converters/convert_codex.py"
 PY_LEDGER="$SCRIPT_DIR/converters/extract_ledger.py"
+PY_PROJECTS="$SCRIPT_DIR/converters/extract_projects.py"
 
 # OS-aware source paths (macOS vs Linux/XDG). Claude Code (~/.claude) and Codex
 # (~/.codex) are the same on both; Cowork/Cursor/OpenCode differ.
@@ -391,6 +392,17 @@ else
   warn_missing "Cursor" "$BASE/markdown-cursor"
 fi
 echo ""
+fi
+
+# ---------------------------------------------------------------------------
+# Project metadata: deterministic git / stack / status per project, written as a
+# _projects.json sidecar the viewer joins with the ledger. Cross-source, so it runs
+# once over all sources. Reads the project dirs locally (git, manifests); no network.
+# ---------------------------------------------------------------------------
+if [ "$DRY" != "1" ]; then
+  python3 "$PY_PROJECTS" "$BASE" \
+    "claude=$HOME_CLAUDE/projects" "cowork=$COWORK_DIR" \
+    "codex=$HOME_CODEX/sessions" "opencode=${OPENCODE_DB:-}" || true
 fi
 
 # clean up temporaries
