@@ -231,6 +231,9 @@
   .turn.collapsed .turn-body{display:none}
   /* expanded: the body already shows the text, so don't repeat it in the head */
   .turn:not(.collapsed) .turn-head .preview{visibility:hidden}
+  /* expanded: tighten the head so it's a compact label above the body, not a
+     tall near-empty row (the preview's 1fr column is hidden but kept for layout) */
+  .turn:not(.collapsed) .turn-head{padding-top:13px;padding-bottom:3px}
   .turn.done{opacity:.45}
   .turn.done .preview{text-decoration:line-through}
   .turn[data-type="tool"] .turn-body{background:var(--tool-bg);border:1px solid #e6e0d2;border-radius:9px;padding:12px 14px;margin-left:88px;font-size:13.5px}
