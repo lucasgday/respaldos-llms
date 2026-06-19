@@ -150,6 +150,12 @@
   .side-repo{padding:0 12px 10px;text-align:center}
   .side-repo a{font-size:11px;color:#7f9b96;text-decoration:none;transition:.12s}
   .side-repo a:hover{color:#cfe0db}
+  .demo-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;
+    padding:7px 14px;font-size:12.5px;background:#FBE9CF;color:#5A3A1A;border-bottom:1px solid #E8C98F}
+  .demo-banner[hidden]{display:none}
+  .demo-banner b{color:#3a2a10}
+  .demo-banner a{color:#9A4A1F;font-weight:600;text-decoration:none;border-bottom:1px solid currentColor}
+  .demo-banner a:hover{color:#7a3514}
   .demo-splash{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;
     padding:20px;background:rgba(10,26,24,.62);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
   .demo-splash[hidden]{display:none}
@@ -354,6 +360,7 @@
 </style>
 </head>
 <body>
+  <div class="demo-banner" id="demoBanner" hidden></div>
   <div class="demo-splash" id="demoSplash" hidden>
     <div class="demo-splash-card" role="dialog" aria-modal="true" aria-labelledby="dsTitle">
       <div class="demo-splash-mark">agentlog</div>
@@ -492,8 +499,9 @@ const I18N = {
     pj_status:"Status", pj_source:"Source", pj_sort:"Sort", pj_f_all:"All", pj_none_match:"No projects match these filters.",
     pj_sort_recent:"Recent activity", pj_sort_name:"Name (A–Z)", pj_sort_count:"Most conversations",
     demo_title:"You're looking at a live demo", demo_b1:"This page is loaded with sample data so you can see how agentlog works. None of it is real.", demo_b2:"agentlog is local & offline — your real conversations never leave your machine, and this demo uploads nothing. Install it to back up and browse your own AI coding history.", demo_accept:"View the demo →", demo_cta:"Get it on GitHub",
+    demo_bn:"sample data — nothing is uploaded.", demo_bn_cta:"Install agentlog to back up your own →",
     demo_install_t:"Install it with your coding agent",
-    demo_install_prompt:"Set up agentlog in this repo for me. It's a local, offline backup + viewer for AI-coding-tool conversations. Please:\n1. Read README.md and `./update-backup.sh --help`.\n2. Run `chmod +x update-backup.sh *.command`.\n3. Run a first backup with `./update-backup.sh` and tell me what each source produced.\n4. If it looks good, install the daily task with `./install-auto.command` (ask me the time first).\n5. Show me how to open viewer.html and point it at the backup folder.\nHard rule: keep everything local — no network calls, and don't commit my conversations (they're gitignored on purpose).",
+    demo_install_prompt:"Set up agentlog for me. It's a local, offline backup + viewer for AI-coding-tool conversations. Please:\n1. Clone it: `git clone https://github.com/lucasgday/agentlog.git && cd agentlog`.\n2. Read README.md and `./update-backup.sh --help`.\n3. Run `chmod +x update-backup.sh *.command`.\n4. Run a first backup with `./update-backup.sh` and tell me what each source produced.\n5. If it looks good, install the daily task with `./install-auto.command` (ask me the time first).\n6. Show me how to open viewer.html and point it at the backup folder.\nHard rule: keep everything local — no network calls, and don't commit my conversations (they're gitignored on purpose).",
     filters:"Filters", show_blocks:"Show blocks", you:"You", assistant:"Agent", tools:"Tools",
     view:"View", hide_done:"Hide marked conversations", hide_archived:"Hide archived",
     collapse_turns:"Collapse all turns", group_by:"Group by:", by_tool:"Tool", by_project:"Project",
@@ -541,8 +549,9 @@ const I18N = {
     pj_status:"Estado", pj_source:"Fuente", pj_sort:"Ordenar", pj_f_all:"Todos", pj_none_match:"Ningún proyecto coincide con estos filtros.",
     pj_sort_recent:"Actividad reciente", pj_sort_name:"Nombre (A–Z)", pj_sort_count:"Más conversaciones",
     demo_title:"Estás viendo una demo en vivo", demo_b1:"Esta página está cargada con datos de ejemplo para que veas cómo funciona agentlog. Nada de esto es real.", demo_b2:"agentlog es local y offline — tus conversaciones reales nunca salen de tu máquina, y esta demo no sube nada. Instalalo para respaldar y explorar tu propio historial de coding con IA.", demo_accept:"Ver la demo →", demo_cta:"Obtenelo en GitHub",
+    demo_bn:"datos de ejemplo — no se sube nada.", demo_bn_cta:"Instalá agentlog para respaldar lo tuyo →",
     demo_install_t:"Instalalo con tu agente de coding",
-    demo_install_prompt:"Configurá agentlog en este repo. Es un backup + viewer local y offline de conversaciones con herramientas de coding con IA. Por favor:\n1. Leé README.md y `./update-backup.sh --help`.\n2. Corré `chmod +x update-backup.sh *.command`.\n3. Corré un primer backup con `./update-backup.sh` y decime qué generó cada fuente.\n4. Si está bien, instalá la tarea diaria con `./install-auto.command` (preguntame el horario primero).\n5. Explicame cómo abrir viewer.html y apuntarlo a la carpeta del backup.\nRegla dura: todo queda local — sin llamadas de red, y no commitees mis conversaciones (están gitignoreadas a propósito).",
+    demo_install_prompt:"Configurá agentlog. Es un backup + viewer local y offline de conversaciones con herramientas de coding con IA. Por favor:\n1. Clonalo: `git clone https://github.com/lucasgday/agentlog.git && cd agentlog`.\n2. Leé README.md y `./update-backup.sh --help`.\n3. Corré `chmod +x update-backup.sh *.command`.\n4. Corré un primer backup con `./update-backup.sh` y decime qué generó cada fuente.\n5. Si está bien, instalá la tarea diaria con `./install-auto.command` (preguntame el horario primero).\n6. Explicame cómo abrir viewer.html y apuntarlo a la carpeta del backup.\nRegla dura: todo queda local — sin llamadas de red, y no commitees mis conversaciones (están gitignoreadas a propósito).",
     filters:"Filtros", show_blocks:"Mostrar bloques", you:"Tú", assistant:"Agente", tools:"Herramientas",
     view:"Vista", hide_done:"Ocultar conversaciones marcadas", hide_archived:"Ocultar archivadas",
     collapse_turns:"Colapsar todos los turnos", group_by:"Agrupar por:", by_tool:"Herramienta", by_project:"Proyecto",
@@ -618,6 +627,7 @@ function applyStaticI18n(){
   set("dsTitle",t("demo_title")); set("dsBody1",t("demo_b1")); set("dsBody2",t("demo_b2"));
   set("dsAccept",t("demo_accept")); set("dsGithub",t("demo_cta"));
   set("dsInstallT",t("demo_install_t")); set("dsPrompt",t("demo_install_prompt")); set("dsCopy",t("copy"));
+  set("demoBanner",`<span><b>Demo</b> · ${t("demo_bn")}</span><a href="https://github.com/lucasgday/agentlog" target="_blank" rel="noopener noreferrer">${t("demo_bn_cta")}</a>`,true);
 }
 
 /* ---------- persistence ---------- */
@@ -1736,8 +1746,11 @@ setLang(detectLang());
       showProjects();
     }
     window.scrollTo(0,0);
-    // Blocking demo splash: makes it unmistakable this is sample data. Skipped
-    // during asset generation (any query param) so screenshots stay clean.
+    // Persistent top banner + blocking splash: make it unmistakable this is
+    // sample data. Both skipped during asset generation (any query param) so
+    // screenshots stay clean.
+    const banner=document.getElementById("demoBanner");
+    if(banner && !location.search) banner.hidden=false;
     const splash=document.getElementById("demoSplash");
     if(splash && !location.search){
       splash.hidden=false;
