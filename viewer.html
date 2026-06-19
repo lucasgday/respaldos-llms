@@ -160,6 +160,10 @@
   .gt-btn.active{background:var(--you);border-color:var(--you);color:#07201d;font-weight:600}
 
   .projects{padding:6px 8px 28px}
+  .proj-focus{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 4px 8px;padding:7px 10px;background:var(--spine-2);border:1px solid var(--line-strong);border-radius:8px}
+  .proj-focus .pf-name{font-size:12px;font-weight:700;color:#e7f0ee;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .proj-focus .pf-clear{flex:0 0 auto;font:inherit;font-size:12px;line-height:1;cursor:pointer;background:transparent;border:1px solid var(--line-strong);color:var(--ink-soft);border-radius:6px;padding:3px 8px}
+  .proj-focus .pf-clear:hover{background:#0c2422;color:#fff;border-color:#3a6b64}
   .source-group{margin:8px 0 4px}
   .source-label{display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#6b9a93;padding:8px 10px 6px 8px;font-weight:700;cursor:pointer;border-radius:0;position:sticky;top:0;z-index:8;background:var(--spine-2);border-left:3px solid transparent}
   .source-label.lbl-claude-code{border-left-color:#5fb8ad}
@@ -199,12 +203,12 @@
   .sess-title{display:block;overflow:hidden;text-overflow:ellipsis}
   .sess .meta{display:flex;gap:7px;flex-wrap:wrap;font-size:10px;color:#6f928c;margin-top:3px}
   .sess .badge-arch{background:#c79a4a;color:#241402;padding:1px 6px;border-radius:4px;font-size:9.5px;font-weight:700}
-  .sess .src-mini{padding:1px 6px;border-radius:4px;font-size:9.5px;font-weight:700}
-  .sess .src-mini.src-claude-code{background:#2f8f82;color:#04211d}
-  .sess .src-mini.src-codex{background:#8b7fd4;color:#150f2e}
-  .sess .src-mini.src-cowork{background:#d49a52;color:#241402}
-  .sess .src-mini.src-opencode{background:#5b9bd8;color:#04162e}
-  .sess .src-mini.src-cursor{background:#d87093;color:#2e0414}
+  .sess .src-mini,.pj-foot .src-mini{padding:1px 6px;border-radius:4px;font-size:9.5px;font-weight:700}
+  .src-mini.src-claude-code{background:#2f8f82;color:#04211d}
+  .src-mini.src-codex{background:#8b7fd4;color:#150f2e}
+  .src-mini.src-cowork{background:#d49a52;color:#241402}
+  .src-mini.src-opencode{background:#5b9bd8;color:#04162e}
+  .src-mini.src-cursor{background:#d87093;color:#2e0414}
 
   .empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px;padding:40px;color:var(--ink-soft)}
   .empty .big{font-family:var(--display);font-size:28px;color:var(--ink);margin:0}
@@ -401,7 +405,7 @@ const state = {
   types: { user:true, assistant:true, tool:true },
   query: "", hideDone:true, hideArchived:true, collapseAll:false,
   backupInfo:{}, collapsedSources:{}, groupMode:"project",
-  lang:"en", ledger:null, projectMeta:{},
+  lang:"en", ledger:null, projectMeta:{}, projectFocus:null,
   progress: {}  // { [sessionId]: { done:bool, turns:{ [i]:bool } } }
 };
 
@@ -415,7 +419,7 @@ const I18N = {
     export_tip:"Save your review progress (which conversations & turns you've marked, per browser) to a file",
     import_tip:"Load review progress from a file exported earlier",
     analytics:"📊 Analytics", runs:"⟳ Runs", projects_nav:"📁 Projects", search:"Search…",
-    projects_title:"Projects", pj_active:"active", pj_inactive:"inactive", pj_gone:"folder gone", pj_deployed:"deployed", pj_nogit:"no git", pj_dirty:"uncommitted changes", pj_sessions:"conversations", pj_last:"last", pj_empty:"No project metadata yet — run a backup to generate it.",
+    projects_title:"Projects", pj_active:"active", pj_inactive:"inactive", pj_gone:"folder gone", pj_deployed:"deployed", pj_nogit:"no git", pj_dirty:"uncommitted changes", pj_sessions:"conversations", pj_last:"last", pj_empty:"No project metadata yet — run a backup to generate it.", pj_clear:"Show all projects",
     filters:"Filters", show_blocks:"Show blocks", you:"You", assistant:"Agent", tools:"Tools",
     view:"View", hide_done:"Hide marked conversations", hide_archived:"Hide archived",
     collapse_turns:"Collapse all turns", group_by:"Group by:", by_tool:"Tool", by_project:"Project",
@@ -458,7 +462,7 @@ const I18N = {
     export_tip:"Guardá tu progreso de revisión (qué conversaciones y turnos marcaste, por navegador) a un archivo",
     import_tip:"Cargá el progreso de revisión desde un archivo exportado antes",
     analytics:"📊 Analytics", runs:"⟳ Corridas", projects_nav:"📁 Proyectos", search:"Buscar…",
-    projects_title:"Proyectos", pj_active:"activo", pj_inactive:"inactivo", pj_gone:"carpeta ausente", pj_deployed:"deployado", pj_nogit:"sin git", pj_dirty:"cambios sin commitear", pj_sessions:"conversaciones", pj_last:"último", pj_empty:"Sin metadata de proyectos todavía — corré un backup para generarla.",
+    projects_title:"Proyectos", pj_active:"activo", pj_inactive:"inactivo", pj_gone:"carpeta ausente", pj_deployed:"deployado", pj_nogit:"sin git", pj_dirty:"cambios sin commitear", pj_sessions:"conversaciones", pj_last:"último", pj_empty:"Sin metadata de proyectos todavía — corré un backup para generarla.", pj_clear:"Ver todos los proyectos",
     filters:"Filtros", show_blocks:"Mostrar bloques", you:"Tú", assistant:"Agente", tools:"Herramientas",
     view:"Vista", hide_done:"Ocultar conversaciones marcadas", hide_archived:"Ocultar archivadas",
     collapse_turns:"Colapsar todos los turnos", group_by:"Agrupar por:", by_tool:"Herramienta", by_project:"Proyecto",
@@ -863,8 +867,11 @@ function cardProject(p){
   </div>`;
 }
 function openProjectInList(name){
+  // focus the sidebar on this project, then open its most recent conversation
+  if(state.groupMode!=="project") setGroupMode("project");
+  state.projectFocus=name;
+  state.collapsedSources["proj:"+name]=false;
   const ss=(state.sessions||[]).filter(s=>(s.project||"(no project)")===name).sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||""));
-  if(state.groupMode==="project") state.collapsedSources["proj:"+name]=false;
   if(ss.length) openSession(ss[0].id);
   else { showView("reader"); renderSidebar(); }
 }
@@ -1314,6 +1321,19 @@ function renderSidebar(){
     }
   }
 
+  // Project focus: when a project is picked from the dashboard, narrow the
+  // sidebar to just that project's conversations (with a clear affordance).
+  if(state.projectFocus){
+    if(state.groupMode!=="project"){ state.projectFocus=null; }
+    else {
+      groups=groups.filter(g=>g.name===state.projectFocus);
+      const fb=document.createElement("div"); fb.className="proj-focus";
+      fb.innerHTML=`<span class="pf-name">📁 ${escapeHtml(state.projectFocus)}</span><button class="pf-clear" title="${t("pj_clear")}">✕</button>`;
+      fb.querySelector(".pf-clear").addEventListener("click",()=>{ state.projectFocus=null; renderSidebar(); });
+      root.appendChild(fb);
+    }
+  }
+
   for(const g of groups){
     // armar subgrupos visibles primero (para la cuenta total)
     const subEls=[]; let total=0;
@@ -1458,6 +1478,7 @@ document.getElementById("search").addEventListener("input",e=>{ clearTimeout(st)
 document.getElementById("hideDone").addEventListener("change",e=>{ state.hideDone=e.target.checked; renderSidebar(); });
 function setGroupMode(mode){
   state.groupMode=mode;
+  state.projectFocus=null;  // switching grouping exits any project focus
   document.getElementById("gtSource").classList.toggle("active",mode==="source");
   document.getElementById("gtProject").classList.toggle("active",mode==="project");
   // when switching mode, collapse all groups of the new mode
