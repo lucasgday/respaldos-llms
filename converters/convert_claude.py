@@ -72,7 +72,16 @@ def clean_title(s):
     if not s:
         return None
     s = s.strip()
-    # drop prompts that are just internal commands
+    # Cowork/Claude wrap some prompts in pseudo-XML (scheduled tasks, slash
+    # commands). Pull out the human-readable bit instead of titling with the tag.
+    m = re.match(r'<scheduled-task\b[^>]*\bname="([^"]+)"', s)
+    if m:
+        s = m.group(1).replace("-", " ").replace("_", " ").strip()
+    else:
+        inner = re.match(r'<([\w-]+)\b[^>]*>(.*?)</\1>', s, re.S)
+        if inner and inner.group(2).strip():
+            s = inner.group(2).strip()
+    # drop prompts that are just internal commands / leftover tags
     if s.startswith("<command-name>") or s.startswith("<") and ">" in s[:30] and len(s) < 40:
         return None
     s = s.replace("\n", " ").strip()

@@ -57,6 +57,9 @@ OpenCode, Cowork). macOS and Linux (paths resolved per-OS; Cowork is macOS-only)
   commit, detected stack (manifests) and status (active/inactive/gone by recency).
   Writes a `_projects.json` sidecar the viewer joins with the ledger (by project
   name) to render a project home. Local reads only (git, manifest files); no network.
+  Cowork runs in throwaway sandboxes with random Docker-style `cwd`s, so it folds
+  into one **virtual** "cowork" project (no filesystem facts, never "gone"),
+  matching the converter which tags every Cowork session `project: cowork`.
 - `viewer.html` — standalone, bilingual (EN/ES) viewer. Pure reader. No build step.
 - `*.command` — double-click launchers (install/uninstall the launchd task; run).
 - `docs/` — `index.html` (the GitHub Pages live demo, sample data baked in),

@@ -60,13 +60,22 @@ def first_cwd_codex(path):
     return None, None
 
 
-def add(projects, cwd, ts, source):
-    """Tally a (cwd, timestamp, source) observation under the project basename."""
-    if not cwd:
+def add(projects, cwd, ts, source, name=None, virtual=False):
+    """Tally a (cwd, timestamp, source) observation under the project basename.
+
+    `name`/`virtual` let a source override the bucket: Cowork runs in throwaway
+    sandboxes with random Docker-style cwds (e.g. /sessions/affectionate-epic-
+    pasteur) that are not real projects, so it all folds into one virtual
+    "cowork" project with no filesystem facts (matching the markdown converter,
+    which tags every Cowork session `project: cowork`)."""
+    if not cwd and not virtual:
         return
-    name = os.path.basename(cwd.rstrip("/")) or cwd
-    p = projects.setdefault(name, {"paths": {}, "last": None, "sources": set()})
-    p["paths"][cwd] = p["paths"].get(cwd, 0) + 1
+    name = name or os.path.basename(cwd.rstrip("/")) or cwd
+    p = projects.setdefault(name, {"paths": {}, "last": None, "sources": set(), "virtual": virtual})
+    if virtual:
+        p["virtual"] = True
+    elif cwd:
+        p["paths"][cwd] = p["paths"].get(cwd, 0) + 1
     p["sources"].add(source)
     if ts and (p["last"] is None or ts > p["last"]):
         p["last"] = ts
@@ -83,7 +92,10 @@ def scan_claude(root, source, projects):
                 cwd, ts = first_cwd_claude(os.path.join(r, b))
             except Exception:
                 continue
-            add(projects, cwd, ts, source)
+            if source == "cowork":
+                add(projects, None, ts, "cowork", name="cowork", virtual=True)
+            else:
+                add(projects, cwd, ts, source)
 
 
 def scan_codex(root, projects):
@@ -166,6 +178,25 @@ def main():
     now = datetime.datetime.now(datetime.timezone.utc)
     out = {}
     for name, p in projects.items():
+        last = p["last"]
+        # Virtual projects (Cowork) have no real working directory: never "gone",
+        # no git/stack/deploy facts — status is purely by recency.
+        if p.get("virtual"):
+            status = "inactive"
+            if last:
+                try:
+                    d = datetime.datetime.fromisoformat(last.replace("Z", "+00:00"))
+                    if d.tzinfo is None:
+                        d = d.replace(tzinfo=datetime.timezone.utc)
+                    status = "active" if (now - d).days <= 21 else "inactive"
+                except Exception:
+                    pass
+            out[name] = {
+                "path": None, "exists": None, "status": status, "virtual": True,
+                "last_activity": last, "sources": sorted(p["sources"]),
+                "git": None, "stack": [], "deployed": False,
+            }
+            continue
         # the most-used cwd wins (handles a project opened from a few paths)
         path = max(p["paths"].items(), key=lambda kv: kv[1])[0]
         exists = os.path.isdir(path)
@@ -173,7 +204,6 @@ def main():
         # status: active if touched in the last 21 days, else inactive; gone if the
         # directory no longer exists.
         status = "gone" if not exists else "inactive"
-        last = p["last"]
         if exists and last:
             try:
                 d = datetime.datetime.fromisoformat(last.replace("Z", "+00:00"))

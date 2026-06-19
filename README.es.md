@@ -137,6 +137,30 @@ Markdown local. Nada, ni crudo ni derivado, sale de tu máquina.
 Requiere **macOS o Linux** y **Python 3** (viene con macOS; preinstalado en la
 mayoría de las distros Linux).
 
+### Inicio rápido: que lo haga tu agente
+
+Como ya usás una herramienta de coding con IA, el camino más rápido es dejar que
+ella configure agentlog por vos. Cloná el repo (o pegá la URL) y pasale a tu
+agente (Claude Code, Codex, Cursor, …) este prompt:
+
+```text
+Configurá agentlog en este repositorio. Es un backup + viewer local y offline
+de conversaciones con herramientas de coding con IA. Por favor:
+1. Leé README.es.md y `./update-backup.sh --help` para entender las flags.
+2. `chmod +x update-backup.sh *.command`.
+3. Corré un primer backup con `./update-backup.sh` y decime cuántas
+   conversaciones generó cada fuente.
+4. Si está todo bien, instalá la tarea automática diaria con
+   `./install-auto.command` (preguntame el horario si tenés dudas).
+5. Explicame cómo abrir viewer.html y apuntarlo a la carpeta del backup.
+
+Regla dura: todo queda local. No agregues llamadas de red, no commitees mis
+conversaciones (están gitignoreadas a propósito) y no mandes mis datos a
+ningún lado.
+```
+
+¿Preferís hacerlo a mano? Seguí los pasos de abajo.
+
 **1. Conseguí el código** — cloná el repo (o descargá el ZIP desde el botón verde
 **Code** en GitHub y descomprimilo):
 

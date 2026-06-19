@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>agentlog · Session viewer</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230F2A28'/%3E%3Cg stroke='%237FB7AE' stroke-width='2.6' stroke-linecap='round'%3E%3Cpath d='M9 11h14'/%3E%3Cpath d='M9 16h14'/%3E%3Cpath d='M9 21h9'/%3E%3C/g%3E%3C/svg%3E">
+<meta name="description" content="Local, private viewer for your AI coding conversations. Zero network calls.">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://github.com/lucasgday/agentlog">
+
 <style>
   :root{
     --spine:#0F2A28; --spine-2:#143836; --paper:#FAFAF6; --panel:#FFFFFF;
@@ -35,8 +41,22 @@
   .an-head h2{margin:0;font-size:20px;color:var(--ink)}
   .an-grid{display:flex;flex-direction:column;gap:24px;max-width:920px;margin:0 auto}
   .proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(258px,1fr));gap:16px;max-width:960px;margin:0 auto}
-  .proj-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px 17px;cursor:pointer;transition:.12s;display:flex;flex-direction:column;gap:10px;min-height:104px}
+  .pj-toolbar{max-width:960px;margin:0 auto 18px;display:flex;flex-direction:column;gap:9px}
+  .pj-tbrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .pj-tblabel{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);flex:0 0 auto}
+  .pj-chips{display:flex;gap:6px;flex-wrap:wrap}
+  .pj-chip{font:inherit;font-size:12px;cursor:pointer;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--ink-soft);transition:.12s;display:inline-flex;align-items:center;gap:5px}
+  .pj-chip:hover{border-color:var(--line-strong);color:var(--ink)}
+  .pj-chip.on{background:var(--spine);color:#fff;border-color:var(--spine)}
+  .pj-chip-n{font-size:10.5px;font-variant-numeric:tabular-nums;opacity:.7}
+  .pj-chip.on .pj-chip-n{opacity:.85}
+  .pj-tbsort{margin-left:auto;display:flex;align-items:center;gap:7px}
+  .pj-select{font:inherit;font-size:12.5px;padding:5px 8px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+  .proj-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px 17px;cursor:pointer;transition:.12s;display:flex;flex-direction:column;gap:10px;min-height:104px;border-left:3px solid var(--line)}
   .proj-card:hover{border-color:var(--line-strong);box-shadow:0 4px 14px rgba(0,0,0,.06)}
+  .proj-card.pj-c-active{border-left-color:#1a8f7f}
+  .proj-card.pj-c-inactive{border-left-color:var(--line-strong)}
+  .proj-card.pj-c-gone{border-left-color:#c44d6e}
   .pj-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
   .pj-name{font-weight:700;font-size:15px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
   .pj-status{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:2px 7px;border-radius:999px;flex:0 0 auto}
@@ -131,6 +151,9 @@
   .side-foot{display:flex;gap:6px;padding:9px 12px;border-top:1px solid #0a201e}
   .side-foot-btn{flex:1;font:inherit;font-size:11.5px;cursor:pointer;padding:7px 8px;border-radius:7px;border:1px solid #2c534f;background:transparent;color:#b9d0cb;white-space:nowrap;transition:.12s}
   .side-foot-btn:hover{background:#0c2422;color:#fff;border-color:#3a6b64}
+  .side-repo{padding:0 12px 10px;text-align:center}
+  .side-repo a{font-size:11px;color:#7f9b96;text-decoration:none;transition:.12s}
+  .side-repo a:hover{color:#cfe0db}
   .reader{overflow-y:auto;background:var(--paper)}
 
   .filters{padding:12px 16px 8px;background:var(--spine);border-bottom:1px solid #0a201e}
@@ -361,6 +384,7 @@
         <button class="side-foot-btn" id="importBtn">⤒ Import</button>
         <input id="importFile" type="file" accept="application/json" hidden>
       </div>
+      <div class="side-repo"><a href="https://github.com/lucasgday/agentlog" target="_blank" rel="noopener noreferrer">★ agentlog on GitHub</a></div>
     </aside>
 
     <main class="reader" id="reader">
@@ -392,6 +416,7 @@
         <h2 id="projects-title">Projects</h2>
         <button class="btn-log" id="btnCloseProjects">← back to the list</button>
       </div>
+      <div class="pj-toolbar" id="pjToolbar"></div>
       <div class="proj-grid" id="projGrid"></div>
     </section>
   </div>
@@ -420,6 +445,8 @@ const I18N = {
     import_tip:"Load review progress from a file exported earlier",
     analytics:"📊 Analytics", runs:"⟳ Runs", projects_nav:"📁 Projects", search:"Search…",
     projects_title:"Projects", pj_active:"active", pj_inactive:"inactive", pj_gone:"folder gone", pj_deployed:"deployed", pj_nogit:"no git", pj_dirty:"uncommitted changes", pj_sessions:"conversations", pj_last:"last", pj_empty:"No project metadata yet — run a backup to generate it.", pj_clear:"Show all projects",
+    pj_status:"Status", pj_source:"Source", pj_sort:"Sort", pj_f_all:"All", pj_none_match:"No projects match these filters.",
+    pj_sort_recent:"Recent activity", pj_sort_name:"Name (A–Z)", pj_sort_count:"Most conversations",
     filters:"Filters", show_blocks:"Show blocks", you:"You", assistant:"Agent", tools:"Tools",
     view:"View", hide_done:"Hide marked conversations", hide_archived:"Hide archived",
     collapse_turns:"Collapse all turns", group_by:"Group by:", by_tool:"Tool", by_project:"Project",
@@ -463,6 +490,8 @@ const I18N = {
     import_tip:"Cargá el progreso de revisión desde un archivo exportado antes",
     analytics:"📊 Analytics", runs:"⟳ Corridas", projects_nav:"📁 Proyectos", search:"Buscar…",
     projects_title:"Proyectos", pj_active:"activo", pj_inactive:"inactivo", pj_gone:"carpeta ausente", pj_deployed:"deployado", pj_nogit:"sin git", pj_dirty:"cambios sin commitear", pj_sessions:"conversaciones", pj_last:"último", pj_empty:"Sin metadata de proyectos todavía — corré un backup para generarla.", pj_clear:"Ver todos los proyectos",
+    pj_status:"Estado", pj_source:"Fuente", pj_sort:"Ordenar", pj_f_all:"Todos", pj_none_match:"Ningún proyecto coincide con estos filtros.",
+    pj_sort_recent:"Actividad reciente", pj_sort_name:"Nombre (A–Z)", pj_sort_count:"Más conversaciones",
     filters:"Filtros", show_blocks:"Mostrar bloques", you:"Tú", assistant:"Agente", tools:"Herramientas",
     view:"Vista", hide_done:"Ocultar conversaciones marcadas", hide_archived:"Ocultar archivadas",
     collapse_turns:"Colapsar todos los turnos", group_by:"Agrupar por:", by_tool:"Herramienta", by_project:"Proyecto",
@@ -811,6 +840,7 @@ function srcColor(f){ return SRC_COLORS[f]||"#888"; }
 
 // ---------- ANALYTICS ----------
 const AN={ gran:"month", srcOn:{}, metric:"conv", tokMode:"total" };  // metric: 'conv'|'turns'; tokMode: 'total'|'base'
+const PJ={ sort:"recent", status:"all", source:"all" };  // projects dashboard view prefs
 
 // weight of a session per the active metric: 1 conversation, or its turn count
 function sesPeso(s){ return AN.metric==="turns" ? (s.turns?s.turns.length:0) : 1; }
@@ -830,7 +860,7 @@ function hideProjects(){ showView("reader"); }
 // Project dashboard: per-project conversation counts (from the markdown) joined
 // with _projects.json (git / stack / status), one card each, newest first.
 function renderProjects(){
-  const grid=document.getElementById("projGrid"); grid.innerHTML="";
+  const grid=document.getElementById("projGrid");
   const byProj=new Map();
   for(const s of (state.sessions||[])){
     const name=s.project||"(no project)";
@@ -839,11 +869,54 @@ function renderProjects(){
     p.count++; p.sources.add(s.fuente);
     if((s.fecha||"")>p.last) p.last=s.fecha||"";
   }
-  if(!byProj.size){ grid.innerHTML=`<div class="an-card">${t("no_data")}</div>`; return; }
-  const rows=[...byProj.values()].map(p=>{
+  if(!byProj.size){ document.getElementById("pjToolbar").innerHTML=""; grid.innerHTML=`<div class="an-card">${t("no_data")}</div>`; return; }
+  const all=[...byProj.values()].map(p=>{
     const meta=state.projectMeta[p.name]||null;
-    return Object.assign(p,{meta, lastSort:(meta&&meta.last_activity)||p.last||""});
-  }).sort((a,b)=>(b.lastSort||"").localeCompare(a.lastSort||""));
+    return Object.assign(p,{meta, status:(meta&&meta.status)||"", lastSort:(meta&&meta.last_activity)||p.last||""});
+  });
+  renderProjToolbar(all);
+  renderProjGrid(all);
+}
+function renderProjToolbar(all){
+  const tb=document.getElementById("pjToolbar"); if(!tb) return;
+  const statusCounts={all:all.length, active:0, inactive:0, gone:0};
+  const srcCounts={};
+  for(const p of all){
+    if(p.status&&statusCounts[p.status]!=null) statusCounts[p.status]++;
+    for(const f of p.sources) srcCounts[f]=(srcCounts[f]||0)+1;
+  }
+  // keep the active status/source filter valid if its bucket emptied
+  if(PJ.status!=="all" && !statusCounts[PJ.status]) PJ.status="all";
+  if(PJ.source!=="all" && !srcCounts[PJ.source]) PJ.source="all";
+  const sortOpts=[["recent",t("pj_sort_recent")],["name",t("pj_sort_name")],["count",t("pj_sort_count")]];
+  const statusChips=["all","active","inactive","gone"].filter(s=>s==="all"||statusCounts[s])
+    .map(s=>`<button class="pj-chip${PJ.status===s?" on":""}" data-status="${s}">${s==="all"?t("pj_f_all"):t(s==="active"?"pj_active":s==="gone"?"pj_gone":"pj_inactive")} <span class="pj-chip-n">${statusCounts[s]}</span></button>`).join("");
+  const srcChips=["all",...Object.keys(srcCounts).sort()]
+    .map(s=>`<button class="pj-chip${PJ.source===s?" on":""}" data-source="${escapeHtml(s)}">${s==="all"?t("pj_f_all"):escapeHtml(niceSource(s))} <span class="pj-chip-n">${s==="all"?all.length:srcCounts[s]}</span></button>`).join("");
+  tb.innerHTML=`
+    <div class="pj-tbrow">
+      <span class="pj-tblabel">${t("pj_status")}</span>
+      <div class="pj-chips">${statusChips}</div>
+      <span class="pj-tbsort">
+        <label class="pj-tblabel" for="pjSort">${t("pj_sort")}</label>
+        <select id="pjSort" class="pj-select">${sortOpts.map(([v,l])=>`<option value="${v}"${PJ.sort===v?" selected":""}>${l}</option>`).join("")}</select>
+      </span>
+    </div>
+    <div class="pj-tbrow">
+      <span class="pj-tblabel">${t("pj_source")}</span>
+      <div class="pj-chips">${srcChips}</div>
+    </div>`;
+  tb.querySelectorAll("[data-status]").forEach(b=>b.addEventListener("click",()=>{ PJ.status=b.dataset.status; renderProjects(); }));
+  tb.querySelectorAll("[data-source]").forEach(b=>b.addEventListener("click",()=>{ PJ.source=b.dataset.source; renderProjects(); }));
+  tb.querySelector("#pjSort").addEventListener("change",e=>{ PJ.sort=e.target.value; renderProjGrid(all); });
+}
+function renderProjGrid(all){
+  const grid=document.getElementById("projGrid");
+  let rows=all.filter(p=>(PJ.status==="all"||p.status===PJ.status) && (PJ.source==="all"||p.sources.has(PJ.source)));
+  if(PJ.sort==="name") rows.sort((a,b)=>a.name.localeCompare(b.name));
+  else if(PJ.sort==="count") rows.sort((a,b)=>b.count-a.count || (b.lastSort||"").localeCompare(a.lastSort||""));
+  else rows.sort((a,b)=>(b.lastSort||"").localeCompare(a.lastSort||""));
+  if(!rows.length){ grid.innerHTML=`<div class="an-card">${t("pj_none_match")}</div>`; return; }
   grid.innerHTML=rows.map(cardProject).join("");
   grid.querySelectorAll(".proj-card").forEach(c=>c.addEventListener("click",()=>openProjectInList(c.dataset.proj)));
 }
@@ -860,7 +933,7 @@ function cardProject(p){
   const srcMini=[...p.sources].map(f=>`<span class="src-mini src-${escapeHtml(f)}">${escapeHtml(niceSource(f))}</span>`).join(" ");
   const lastRaw=(m.last_activity||p.last||"");
   const lastDate=lastRaw?escapeHtml(formatDate(lastRaw.slice(0,10),false)):"";
-  return `<div class="proj-card" data-proj="${escapeHtml(p.name)}">
+  return `<div class="proj-card${st?" pj-c-"+st:""}" data-proj="${escapeHtml(p.name)}">
     <div class="pj-head"><span class="pj-name">${escapeHtml(p.name)}</span>${statusPill}</div>
     <div class="pj-meta">${gitPill}${stackPills}${deployed}</div>
     <div class="pj-foot"><span class="pj-count"><b>${p.count}</b> ${t("pj_sessions")}</span><span class="pj-src">${srcMini}</span><span class="pj-date">${lastDate}</span></div>

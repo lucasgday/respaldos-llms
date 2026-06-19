@@ -133,6 +133,30 @@ writes local Markdown. Nothing, raw or derived, leaves your machine.
 Requires **macOS or Linux** and **Python 3** (ships with macOS; preinstalled on
 most Linux distros).
 
+### Quick start: let your coding agent do it
+
+Since you already use an AI coding tool, the fastest path is to let it set
+agentlog up for you. Clone the repo (or paste the URL), then give your agent
+(Claude Code, Codex, Cursor, …) this prompt:
+
+```text
+Set up agentlog in this repository for me. It's a local, offline backup +
+viewer for AI-coding-tool conversations. Please:
+1. Read README.md and `./update-backup.sh --help` to understand the flags.
+2. `chmod +x update-backup.sh *.command`.
+3. Run a first backup with `./update-backup.sh` and report how many
+   conversations each source produced.
+4. If it looks good, install the daily automatic task by running
+   `./install-auto.command` (ask me first if you're unsure of the time).
+5. Tell me how to open viewer.html and point it at the backup folder.
+
+Hard rule: everything stays local. Don't add any network calls, don't commit
+my conversations (they're gitignored on purpose), and don't send my data
+anywhere.
+```
+
+Prefer to do it by hand? Follow the steps below.
+
 **1. Get the code** — clone it (or download the ZIP from the green **Code**
 button on GitHub and unzip it):
 
