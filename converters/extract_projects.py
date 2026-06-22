@@ -7,7 +7,7 @@ The viewer joins this with the per-project ledger metrics to render a project ho
 
 The viewer is a pure reader (no shell/git), so the backup computes this and writes a
 `_projects.json` sidecar next to the markdowns. No network: only local reads of the
-project dirs (git, manifest files) and the raw transcripts (for the cwd).
+project dirs (git, manifest/source/deploy hints) and the raw transcripts (for the cwd).
 
 Usage: extract_projects.py <out_dir> [claude=<dir>] [cowork=<dir>] [codex=<dir>] [opencode=<db>]
   Each source is scanned only for the project working directory (cheap: the cwd is
@@ -23,6 +23,21 @@ MANIFESTS = [
     ("pom.xml", "java"), ("build.gradle", "java"), ("composer.json", "php"),
     ("Package.swift", "swift"), ("pubspec.yaml", "dart"), ("Dockerfile", "docker"),
 ]
+# Fallback source hints for lightweight repos that do not carry manifests.
+SOURCE_HINTS = [
+    ((".html", ".htm"), "html"),
+    ((".py",), "python"),
+    ((".sh", ".command"), "shell"),
+    ((".ts", ".tsx"), "typescript"),
+    ((".js", ".jsx", ".mjs", ".cjs"), "node"),
+    ((".rs",), "rust"),
+    ((".go",), "go"),
+    ((".swift",), "swift"),
+    ((".rb",), "ruby"),
+    ((".java",), "java"),
+    ((".php",), "php"),
+]
+STACK_SKIP_DIRS = {".git", ".hg", ".svn", "node_modules", ".venv", "venv", "__pycache__"}
 # Hints that a project is deployed somewhere (local read, no network).
 DEPLOY_HINTS = ["vercel.json", "netlify.toml", "fly.toml", ".github/workflows",
                 "Procfile", "render.yaml", "wrangler.toml"]
@@ -178,6 +193,22 @@ def detect_stack(path):
     for fname, label in MANIFESTS:
         if os.path.exists(os.path.join(path, fname)) and label not in out:
             out.append(label)
+    if out:
+        return out
+    seen = set()
+    for root, dirs, files in os.walk(path):
+        dirs[:] = [d for d in dirs if d not in STACK_SKIP_DIRS and not d.endswith(".egg-info")]
+        for fname in files:
+            lower = fname.lower()
+            for suffixes, label in SOURCE_HINTS:
+                if lower.endswith(suffixes):
+                    seen.add(label)
+                    break
+        if len(seen) == len(SOURCE_HINTS):
+            break
+    for _suffixes, label in SOURCE_HINTS:
+        if label in seen and label not in out:
+            out.append(label)
     return out
 
 
@@ -209,6 +240,9 @@ def detect_deploy_url(path):
                             return url
         except Exception:
             pass
+    vercel_url = detect_vercel_project_url(path)
+    if vercel_url:
+        return vercel_url
     fly = os.path.join(path, "fly.toml")
     if os.path.exists(fly):
         try:
@@ -226,6 +260,20 @@ def detect_deploy_url(path):
         except Exception:
             pass
     return None
+
+
+def detect_vercel_project_url(path):
+    project = os.path.join(path, ".vercel", "project.json")
+    if not os.path.exists(project):
+        return None
+    try:
+        data = json.load(open(project))
+    except Exception:
+        return None
+    name = str(data.get("projectName") or "").strip().lower()
+    if not re.match(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$", name):
+        return None
+    return f"https://{name}.vercel.app"
 
 
 def main():

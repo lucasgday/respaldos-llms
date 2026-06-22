@@ -54,11 +54,12 @@ OpenCode, Cowork). macOS and Linux (paths resolved per-OS; Cowork is macOS-only)
   archive folders — read once to seed token data, optional thereafter.
 - `converters/extract_projects.py` — **Project metadata**: deterministic, $0,
   on-device. Reads each project's `cwd` from the raw, then its git branch / last
-  commit, detected stack (manifests) and status (active/inactive/gone by
+  commit, detected stack (manifests/source hints) and status (active/inactive/gone by
   last-30-days activity or deployed state), plus safe local `repo_url` /
   `deploy_url` hints when available.
   Writes a `_projects.json` sidecar the viewer joins with the ledger (by project
-  name) to render a project home. Local reads only (git, manifest files); no network.
+  name) to render a project home. Local reads only (git, manifests/source/deploy
+  hints); no network.
   Cowork runs in throwaway sandboxes with random Docker-style `cwd`s, so it folds
   into one **virtual** "cowork" project (no filesystem facts, never "gone"),
   matching the converter which tags every Cowork session `project: cowork`.

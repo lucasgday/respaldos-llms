@@ -18,8 +18,8 @@ something that isn't here).
   the progress export/import flow, and offer a drawer to recover hidden or
   archived projects without losing their conversations.
 - **Deployment link coverage.** Keep expanding optional `deploy_url` detection from
-  safe local sources such as project config files or locally cached deployment
-  metadata.
+  safe local sources such as project config files, `.vercel/project.json`, or
+  locally cached deployment metadata.
 - **Recommended `AGENTS.md` / `CLAUDE.md`.** Derived from your own conversations —
   your style, preferences and recurring asks — so you stop re-explaining them in
   every repo. Per-project and global.

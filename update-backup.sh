@@ -395,9 +395,10 @@ echo ""
 fi
 
 # ---------------------------------------------------------------------------
-# Project metadata: deterministic git / stack / status per project, written as a
+# Project metadata: deterministic git / stack / deploy / status per project, written as a
 # _projects.json sidecar the viewer joins with the ledger. Cross-source, so it runs
-# once over all sources. Reads the project dirs locally (git, manifests); no network.
+# once over all sources. Reads the project dirs locally (git, manifests, deploy
+# hints); no network.
 # ---------------------------------------------------------------------------
 if [ "$DRY" != "1" ]; then
   python3 "$PY_PROJECTS" "$BASE" \
