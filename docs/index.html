@@ -127,6 +127,7 @@
   .an-gran{display:flex;gap:4px;margin-left:auto}
   .an-gran button{font:inherit;font-size:11px;cursor:pointer;padding:4px 10px;border-radius:6px;border:1px solid var(--line);background:#fff;color:var(--ink-soft)}
   .an-gran button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .an-more-btn{margin-top:10px}
   .an-svg{width:100%;height:auto;overflow:visible}
   .an-tooltip{position:fixed;z-index:100;pointer-events:none;background:var(--ink);color:#fff;padding:7px 11px;border-radius:8px;font-size:12px;line-height:1.4;box-shadow:0 6px 20px rgba(0,0,0,.3);opacity:0;transition:opacity .1s;white-space:nowrap}
   .an-tooltip.show{opacity:1}
@@ -314,7 +315,7 @@
   .sess-title{display:block;overflow:hidden;text-overflow:ellipsis}
   .sess .meta{display:flex;gap:7px;flex-wrap:wrap;font-size:10px;color:#6f928c;margin-top:3px}
   .sess .badge-arch{background:#c79a4a;color:#241402;padding:1px 6px;border-radius:4px;font-size:9.5px;font-weight:700}
-  .sess .src-mini,.pj-foot .src-mini,.ph-sub .src-mini,.ph-fact .src-mini,.ph-conv-meta .src-mini{padding:1px 6px;border-radius:4px;font-size:9.5px;font-weight:700}
+  .sess .src-mini,.pj-foot .src-mini,.project-side-meta .src-mini,.ph-sub .src-mini,.ph-fact .src-mini,.ph-conv-meta .src-mini{display:inline-flex;align-items:center;padding:1px 6px;border-radius:4px;font-size:9.5px;font-weight:700;line-height:1.25}
   .src-mini.src-claude-code{background:#2f8f82;color:#fff}
   .src-mini.src-codex{background:#8b7fd4;color:#fff}
   .src-mini.src-cowork{background:#d49a52;color:#fff}
@@ -581,7 +582,7 @@ const I18N = {
     ph_back_projects:"← projects", ph_focus_list:"Open in list", ph_copy_brief:"Copy context",
     ph_facts:"Project facts", ph_activity:"Activity", ph_conversations:"Conversations",
     ph_path:"Path", ph_git:"Git", ph_stack:"Stack", ph_deploy:"Deploy", ph_sources:"Sources",
-    ph_status:"Status", ph_last_activity:"Last backed-up conversation", ph_last_backup_run:"Last backup run", ph_virtual:"virtual project", ph_no_path:"no path", ph_git_none:"no git", ph_stack_none:"not detected", ph_deployed_yes:"yes", ph_deployed_no:"no",
+    ph_status:"Status", ph_last_activity:"Last backed-up conversation", ph_virtual:"virtual project", ph_no_path:"no path", ph_git_none:"no git", ph_stack_none:"not detected", ph_deployed_yes:"yes", ph_deployed_no:"no",
     ph_metadata_updated:"Metadata updated", ph_view_activity:"View activity", ph_hide_activity:"Hide activity",
     ph_repo:"Repo", ph_repo_none:"no repo", ph_show_reviewed:"Show reviewed", ph_show_archived:"Show archived", ph_mark_reviewed:"Mark reviewed", ph_unmark_reviewed:"Unmark",
     ph_conv_active:"active", ph_conv_archived:"archived", ph_conv_reviewed:"reviewed",
@@ -604,7 +605,7 @@ const I18N = {
     daily_activity:"Daily activity (last year)", no_data:"No data. Load a folder first.",
     day:"Day", week:"Week", month:"Month", dow:["","Mon","","Wed","","Fri",""],
     metric_conv:"conversations", metric_turns:"turns",
-    top_projects:"Top 5 projects by", no_activity:"no activity", total:"total", period_total:"period total",
+    top_projects:"Projects by", top_projects_more:"View more", top_projects_less:"View less", no_activity:"no activity", total:"total", period_total:"period total",
     archived_badge:"archived", n_turns:"turns", mark_reviewed:"Mark as reviewed",
     project_pill:"Project", copy_conv:"Copy conversation",
     mark_conv:"Mark conversation as reviewed", unmark_conv:"Unmark conversation",
@@ -638,7 +639,7 @@ const I18N = {
     ph_back_projects:"← proyectos", ph_focus_list:"Abrir en lista", ph_copy_brief:"Copiar contexto",
     ph_facts:"Datos del proyecto", ph_activity:"Actividad", ph_conversations:"Conversaciones",
     ph_path:"Ruta", ph_git:"Git", ph_stack:"Stack", ph_deploy:"Deploy", ph_sources:"Fuentes",
-    ph_status:"Estado", ph_last_activity:"Última conversación respaldada", ph_last_backup_run:"Último respaldo", ph_virtual:"proyecto virtual", ph_no_path:"sin ruta", ph_git_none:"sin git", ph_stack_none:"no detectado", ph_deployed_yes:"sí", ph_deployed_no:"no",
+    ph_status:"Estado", ph_last_activity:"Última conversación respaldada", ph_virtual:"proyecto virtual", ph_no_path:"sin ruta", ph_git_none:"sin git", ph_stack_none:"no detectado", ph_deployed_yes:"sí", ph_deployed_no:"no",
     ph_metadata_updated:"Metadata actualizada", ph_view_activity:"Ver actividad", ph_hide_activity:"Ocultar actividad",
     ph_repo:"Repo", ph_repo_none:"sin repo", ph_show_reviewed:"Mostrar revisadas", ph_show_archived:"Mostrar archivadas", ph_mark_reviewed:"Marcar revisada", ph_unmark_reviewed:"Desmarcar",
     ph_conv_active:"activas", ph_conv_archived:"archivadas", ph_conv_reviewed:"revisadas",
@@ -661,7 +662,7 @@ const I18N = {
     daily_activity:"Actividad diaria (último año)", no_data:"Sin datos. Cargá una carpeta primero.",
     day:"Día", week:"Semana", month:"Mes", dow:["","Lun","","Mié","","Vie",""],
     metric_conv:"conversaciones", metric_turns:"turnos",
-    top_projects:"Top 5 proyectos por", no_activity:"sin actividad", total:"total", period_total:"total del período",
+    top_projects:"Proyectos por", top_projects_more:"Ver más", top_projects_less:"Ver menos", no_activity:"sin actividad", total:"total", period_total:"total del período",
     archived_badge:"archivada", n_turns:"turnos", mark_reviewed:"Marcar como revisada",
     project_pill:"Proyecto", copy_conv:"Copiar conversación",
     mark_conv:"Marcar conversación como revisada", unmark_conv:"Desmarcar conversación",
@@ -805,14 +806,6 @@ function renderBackupStamp(){
   // per-source detail in the tooltip
   const det=Object.entries(info).map(([k,v])=>`${k}: ${formatDate(v.generated||v.generado,true)} (${v.conversations||v.conversaciones||0})`).join("\n");
   el.title=det;
-}
-function latestBackupRunForSources(srcs){
-  const info=state.backupInfo||{};
-  let fechas=[...srcs].map(f=>info[f]&&(info[f].generated||info[f].generado)).filter(Boolean);
-  if(!fechas.length) fechas=Object.values(info).map(v=>v&&(v.generated||v.generado)).filter(Boolean);
-  if(!fechas.length && state.projectMetaGenerated) fechas=[state.projectMetaGenerated];
-  fechas.sort();
-  return fechas[fechas.length-1]||"";
 }
 
 function renderMarkdown(src){
@@ -1014,7 +1007,7 @@ const SRC_COLORS={"claude-code":"#2f8f82","codex":"#8b7fd4","cowork":"#d49a52","
 function srcColor(f){ return SRC_COLORS[f]||"#888"; }
 
 // ---------- ANALYTICS ----------
-const AN={ gran:"month", srcOn:{}, metric:"conv", tokMode:"total" };  // metric: 'conv'|'turns'; tokMode: 'total'|'base'
+const AN={ gran:"month", srcOn:{}, metric:"conv", tokMode:"total", showAllProjects:false };  // metric: 'conv'|'turns'; tokMode: 'total'|'base'
 const PJ={ sort:"recent", status:"all", source:"all" };  // projects dashboard view prefs
 const PH={ showArchived:false, showReviewed:false };  // project home view prefs
 
@@ -1205,8 +1198,6 @@ function renderProjectHome(name){
   const srcMini=[...srcs].sort().map(f=>`<span class="src-mini src-${escapeHtml(f)}">${escapeHtml(niceSource(f))}</span>`).join(" ");
   const lastRaw=m.last_activity||sessions[0].fecha||"";
   const lastDate=lastRaw?formatDate(lastRaw,true):"";
-  const backupRaw=latestBackupRunForSources(srcs);
-  const backupDate=backupRaw?formatDate(backupRaw,true):"";
   const metaDate=state.projectMetaGenerated ? formatDate(state.projectMetaGenerated,true) : "";
   const g=m.git||null;
   const gitValue=(g&&g.branch)
@@ -1256,7 +1247,6 @@ function renderProjectHome(name){
       </div>
       <div class="ph-top-metas">
         <div class="ph-top-meta"><span>${t("ph_last_activity")}</span><b>${escapeHtml(lastDate||"-")}</b></div>
-        ${backupDate && backupDate!==lastDate ? `<div class="ph-top-meta"><span>${t("ph_last_backup_run")}</span><b>${escapeHtml(backupDate)}</b></div>` : ""}
       </div>
       <div class="ph-facts">
         ${projectFact(t("ph_path"), pathValue, true)}
@@ -1485,18 +1475,19 @@ function cardStackedArea(sesiones){
   return card;
 }
 
-// 3: top 5 proyectos
+// 3: projects by metric
 function cardTopProjects(sesiones){
   const card=document.createElement("div"); card.className="an-card";
   card.innerHTML=`<h3>${t("top_projects")} ${metricLabel()}</h3>`;
   const byProj=new Map();
   for(const s of sesiones){ byProj.set(s.project,(byProj.get(s.project)||0)+sesPeso(s)); }
-  const top=[...byProj.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5);
-  if(!top.length) return card;
-  const max=top[0][1];
-  const W=820, rowH=34, H=top.length*rowH+10;
+  const rows=[...byProj.entries()].sort((a,b)=>b[1]-a[1]);
+  if(!rows.length) return card;
+  const visible=AN.showAllProjects ? rows : rows.slice(0,5);
+  const max=rows[0][1];
+  const W=820, rowH=34, H=visible.length*rowH+10;
   let svg=`<svg class="an-svg" viewBox="0 0 ${W} ${H}">`;
-  top.forEach(([proj,n],i)=>{
+  visible.forEach(([proj,n],i)=>{
     const y=i*rowH+6; const barMax=W-220; const bw=Math.max(barMax*n/max,2);
     svg+=`<text class="an-bar-label" x="0" y="${y+16}">${escapeHtml(proj.length>28?proj.slice(0,28)+"…":proj)}</text>`;
     svg+=`<rect x="180" y="${y+4}" width="${bw}" height="18" rx="4" fill="var(--you)" data-tip="<b>${escapeHtml(proj)}</b><br><b>${n}</b> ${metricLabel()}"/>`;
@@ -1504,6 +1495,15 @@ function cardTopProjects(sesiones){
   });
   svg+=`</svg>`;
   const div=document.createElement("div"); div.innerHTML=svg; card.appendChild(div);
+  if(rows.length>5){
+    const btn=document.createElement("button");
+    btn.type="button";
+    btn.className="am-btn an-more-btn";
+    btn.setAttribute("data-top-project-toggle","true");
+    btn.textContent=AN.showAllProjects ? t("top_projects_less") : `${t("top_projects_more")} (${rows.length-5})`;
+    btn.addEventListener("click",()=>{ AN.showAllProjects=!AN.showAllProjects; renderAnalytics(); });
+    card.appendChild(btn);
+  }
   return card;
 }
 
@@ -1549,7 +1549,7 @@ function cardDetailMetrics(lg){
   const cont=document.createElement("div"); cont.className="lg-grid";
   cont.innerHTML=stats.map(([n,l,key])=>{
     const tip=md[key]?` data-tip="<b>${escapeHtml(l)}</b><br>${escapeHtml(md[key])}"`:"";
-    return `<div class="an-stat"${tip}><div class="num">${n}</div><div class="lbl">${l}</div></div>`;
+    return `<div class="an-stat"${tip}><div class="num">${fmtNum(n)}</div><div class="lbl">${l}</div></div>`;
   }).join("");
   card.appendChild(cont);
   return card;
@@ -1614,10 +1614,10 @@ function cardOverview(sesiones, lg){
   ];
   if(lg){
     const T=lg.totals;
-    stats.push([T.user_messages,t("lg_prompts")],[fmtNum(T.tool_calls),t("lg_tool_calls")],[T.files_modified,t("lg_files")]);
+    stats.push([T.user_messages,t("lg_prompts")],[T.tool_calls,t("lg_tool_calls")],[T.files_modified,t("lg_files")]);
   }
   const cont=document.createElement("div"); cont.className="lg-grid";
-  cont.innerHTML=stats.map(([n,l])=>`<div class="an-stat"><div class="num">${n}</div><div class="lbl">${l}</div></div>`).join("");
+  cont.innerHTML=stats.map(([n,l])=>`<div class="an-stat"><div class="num">${fmtNum(n)}</div><div class="lbl">${l}</div></div>`).join("");
   card.appendChild(cont);
   return card;
 }
